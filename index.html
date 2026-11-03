@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fernández Fica · UPS Modular 3D</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+  <div id="left">
+    <div id="view">
+      <div id="paso"></div>
+      <div id="toast"></div>
+      <div id="tip"></div>
+      <div id="hint">Arrastre para girar · rueda para acercar · clic en puertas, módulos y automáticos para operarlos</div>
+    </div>
+    <section id="unifilar">
+      <h2>Diagrama unifilar</h2>
+      <svg id="uni" viewBox="0 0 395 360" preserveAspectRatio="xMidYMid meet">
+        <rect id="n_red" class="node" x="85" y="6" width="140" height="20" rx="4"/>
+        <text class="t" x="155" y="20">RED ELÉCTRICA</text>
+        <path id="w_g1" class="w" d="M155 26V35"/>
+        <path id="w_g2" class="w" d="M155 53V66"/>
+        <path id="w_bus" class="w" d="M80 66H230"/>
+        <g class="brk" data-cb="CB5" transform="translate(155,44)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="169" y="47">CB5 General</text>
+        <rect id="blk1" class="blk" x="10" y="100" width="140" height="136" rx="6"/><text class="l" x="16" y="112">UPS 1 · 10 kVA</text>
+        <path id="w_i1a" class="w" d="M80 66V77"/>
+        <path id="w_i1b" class="w" d="M80 95V128"/>
+        <path id="w_i1bb" class="w" d="M80 108H129V128"/>
+        <path id="w_i1r" class="w" d="M80 148V164"/>
+        <path id="w_i1t" class="w" d="M80 164H32"/>
+        <path id="w_i1t1" class="w" d="M32 164V138"/>
+        <path id="w_i1t2" class="w" d="M32 164V186"/>
+        <path id="w_i1d" class="w" d="M80 164V176"/>
+        <path id="w_i1o" class="w" d="M80 196V216"/>
+        <path id="w_i1y" class="w" d="M129 146V216H80"/>
+        <path id="w_i1q" class="w" d="M80 216V245"/>
+        <path id="w_i1z" class="w" d="M80 263V284"/>
+        <circle id="dc1" class="dot" cx="80" cy="164" r="3.5"/>
+        <rect id="n_rect1" class="node" x="60" y="128" width="40" height="20" rx="4"/><text class="t" x="80" y="141">Rect.</text>
+        <rect id="n_inv1" class="node" x="60" y="176" width="40" height="20" rx="4"/><text class="t" x="80" y="189">Inv.</text>
+        <rect id="n_byp1" class="node" x="110" y="128" width="38" height="18" rx="4"/><text class="t" x="129" y="140">Bypass</text>
+        <rect id="n_bat1_1" class="node" x="12" y="120" width="40" height="18" rx="4"/><text class="t" x="32" y="133">Bat. 1</text>
+        <rect id="n_bat1_2" class="node" x="12" y="186" width="40" height="18" rx="4"/><text class="t" x="32" y="199">Bat. 2</text>
+        <text id="cfg1" class="l" x="16" y="230">Bancos 2/2</text>
+        <g class="brk" data-cb="CB1" transform="translate(80,86)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="93" y="89">CB1 Entrada</text>
+        <g class="brk" data-cb="CB2" transform="translate(80,254)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="93" y="257">CB2 Salida</text>
+        <rect id="blk2" class="blk" x="160" y="100" width="140" height="136" rx="6"/><text class="l" x="166" y="112">UPS 2 · 10 kVA</text>
+        <path id="w_i2a" class="w" d="M230 66V77"/>
+        <path id="w_i2b" class="w" d="M230 95V128"/>
+        <path id="w_i2bb" class="w" d="M230 108H279V128"/>
+        <path id="w_i2r" class="w" d="M230 148V164"/>
+        <path id="w_i2t" class="w" d="M230 164H182"/>
+        <path id="w_i2t1" class="w" d="M182 164V138"/>
+        <path id="w_i2t2" class="w" d="M182 164V186"/>
+        <path id="w_i2d" class="w" d="M230 164V176"/>
+        <path id="w_i2o" class="w" d="M230 196V216"/>
+        <path id="w_i2y" class="w" d="M279 146V216H230"/>
+        <path id="w_i2q" class="w" d="M230 216V245"/>
+        <path id="w_i2z" class="w" d="M230 263V284"/>
+        <circle id="dc2" class="dot" cx="230" cy="164" r="3.5"/>
+        <rect id="n_rect2" class="node" x="210" y="128" width="40" height="20" rx="4"/><text class="t" x="230" y="141">Rect.</text>
+        <rect id="n_inv2" class="node" x="210" y="176" width="40" height="20" rx="4"/><text class="t" x="230" y="189">Inv.</text>
+        <rect id="n_byp2" class="node" x="260" y="128" width="38" height="18" rx="4"/><text class="t" x="279" y="140">Bypass</text>
+        <rect id="n_bat2_1" class="node" x="162" y="120" width="40" height="18" rx="4"/><text class="t" x="182" y="133">Bat. 1</text>
+        <rect id="n_bat2_2" class="node" x="162" y="186" width="40" height="18" rx="4"/><text class="t" x="182" y="199">Bat. 2</text>
+        <text id="cfg2" class="l" x="166" y="230">Bancos 2/2</text>
+        <g class="brk" data-cb="CB3" transform="translate(230,86)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="243" y="89">CB3 Entrada</text>
+        <g class="brk" data-cb="CB4" transform="translate(230,254)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="243" y="257">CB4 Salida</text>
+        <g id="x1" class="xmark"><line x1="10" y1="100" x2="150" y2="236"/><line x1="150" y1="100" x2="10" y2="236"/></g>
+        <g id="x2" class="xmark"><line x1="160" y1="100" x2="300" y2="236"/><line x1="300" y1="100" x2="160" y2="236"/></g>
+        <path id="w_r1" class="w" d="M230 66H335V166"/>
+        <path id="w_r2" class="w" d="M335 184V284H230"/>
+        <g class="brk" data-cb="CB7" transform="translate(335,175)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="348" y="172">CB7 Bypass</text><text class="l" x="348" y="183">de rodeo</text>
+        <path id="w_ob" class="w" d="M80 284H230"/>
+        <path id="w_os" class="w" d="M155 284V293"/>
+        <path id="w_ol" class="w" d="M155 311V328"/>
+        <g class="brk" data-cb="CB6" transform="translate(155,302)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="169" y="305">CB6 Salida</text>
+        <rect id="n_load" class="node" x="125" y="328" width="60" height="20" rx="4"/><text class="t" x="155" y="342">CARGA</text>
+      </svg>
+    </section>
+  </div>
+
+  <aside id="panel">
+    <header>
+      <h1>UPS Modular 3D - Paralelo redundante</h1>
+      <p>Modelo provisional · 2 UPS de 10 kVA en paralelo redundante (N+1) · 220–240 VAC</p>
+    </header>
+
+    <section class="montaje">
+      <h2>Montaje de las UPS</h2>
+      <div class="row">
+        <button id="btnMontar" class="primary huge grow">Montar UPS</button>
+        <button id="btnDesmontar" class="warnbtn huge grow">Desmontar UPS</button>
+      </div>
+      <p class="note">Secuencia automática que maniobra los automáticos sin botar la carga. Con la puerta frontal abierta también puede hacer clic en una UPS o un banco para extraerlo; <b>Ctrl+clic</b> lo retira por completo.</p>
+    </section>
+
+    <div class="cols">
+      <div class="col">
+        <section>
+          <h2>Automáticos</h2>
+          <div id="breakerRows"></div>
+        </section>
+        <section>
+          <h2>Red y carga</h2>
+          <label class="sw"><span>Red eléctrica presente<small>Apáguela para simular un corte</small></span><input type="checkbox" id="swMains" checked></label>
+          <div style="margin-top:8px">
+            <div class="row" style="justify-content:space-between"><span>Carga conectada</span><b id="loadVal">8 kW</b></div>
+            <input type="range" id="load" min="0" max="24" step="1" value="8">
+          </div>
+        </section>
+        <section>
+          <h2>Rack y cámara</h2>
+          <label class="sw"><span>Puerta frontal</span><input type="checkbox" id="swFront"></label>
+          <label class="sw"><span>Puerta trasera</span><input type="checkbox" id="swRear"></label>
+          <label class="sw"><span>Laterales cerrados</span><input type="checkbox" id="swSides"></label>
+          <div class="row" style="margin-top:8px">
+            <button class="sm cam" data-cam="front">Frente</button>
+            <button class="sm cam" data-cam="iso">Interior</button>
+            <button class="sm cam" data-cam="side">Lateral</button>
+            <button class="sm cam" data-cam="top">Superior</button>
+            <button class="sm" id="btnShot">Captura PNG</button>
+          </div>
+        </section>
+        <section>
+          <h2>Fotos de referencia</h2>
+          <input type="file" id="photoIn" accept="image/*" multiple hidden>
+          <button class="sm" id="btnPhoto">Agregar fotos…</button>
+          <div class="thumbs" id="thumbs"></div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section>
+          <h2>Comandos de las UPS</h2>
+          <div class="cmd"><span class="note">Modo del sistema</span>
+            <div class="row"><button class="sm" id="btnInv">Inversor</button><button class="sm" id="btnByp">Bypass estático</button></div></div>
+          <div class="cmd"><span class="note">Traspasar carga (stand by)</span>
+            <div class="row"><button class="sm" id="btnT0">UPS 1 → UPS 2</button><button class="sm" id="btnT1">UPS 2 → UPS 1</button></div></div>
+          <div class="cmd"><span class="note">Bancos en uso (botón BAT de la UPS)</span>
+            <div class="row"><button class="sm" id="btnC0">UPS 1: 2 bancos</button><button class="sm" id="btnC1">UPS 2: 2 bancos</button></div></div>
+        </section>
+        <section>
+          <h2>Simular fallas</h2>
+          <div class="cmd"><span class="note">UPS</span>
+            <div class="row"><button class="sm" id="btnF0">Falla UPS 1</button><button class="sm" id="btnF1">Falla UPS 2</button></div></div>
+          <div class="cmd"><span class="note">Bancos de baterías</span>
+            <div class="row">
+              <button class="sm" id="btnB00">UPS 1 · B1</button><button class="sm" id="btnB01">UPS 1 · B2</button>
+              <button class="sm" id="btnB10">UPS 2 · B1</button><button class="sm" id="btnB11">UPS 2 · B2</button>
+            </div></div>
+        </section>
+        <section>
+          <h2>Estado</h2>
+          <div class="metrics">
+            <div class="metric"><span>Modo</span><b id="mMode">—</b></div>
+            <div class="metric"><span>Capacidad</span><b id="mCap">—</b></div>
+            <div class="metric"><span>Batería</span><b id="mSoc">—</b></div>
+            <div class="metric"><span>Autonomía</span><b id="mAut">—</b></div>
+          </div>
+          <ul id="alarms"></ul>
+          <p class="note">Simulación acelerada: 1 segundo real = 1 minuto de funcionamiento.</p>
+        </section>
+      </div>
+    </div>
+  </aside>
+</div>
+<div id="lightbox"><img alt=""></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

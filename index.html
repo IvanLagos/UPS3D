@@ -203,6 +203,31 @@
   </aside>
 </div>
 
+<script>
+/* Si el 3D no arranca (p. ej. archivos viejos en la caché del navegador tras una actualización), recarga una vez
+   saltándose la caché y, si sigue fallando, muestra el motivo en pantalla. */
+(function () {
+  var motivo = '';
+  function mostrar() {
+    if (window.__appStarted || document.getElementById('fallo')) return;
+    var d = document.createElement('div'); d.id = 'fallo';
+    d.innerHTML = '<b>No se pudo iniciar la simulación 3D.</b><br>' + (motivo || 'Tardó demasiado en cargar.') +
+      '<br><small>Pruebe recargar con Ctrl+F5. Si sigue igual, revise que el navegador tenga WebGL y acceso a internet (three.js se carga desde cdn.jsdelivr.net).</small>';
+    (document.getElementById('view') || document.body).appendChild(d);
+  }
+  function recuperar() {
+    if (window.__appStarted) return;
+    var ya = false; try { ya = sessionStorage.getItem('ups3d-reintento'); } catch (e) {}
+    if (ya) return mostrar();
+    try { sessionStorage.setItem('ups3d-reintento', '1'); } catch (e) {}
+    var urls = performance.getEntriesByType('resource').map(function (r) { return r.name; }).filter(function (u) { return /\.(js|css)(\?|$)/.test(u); });
+    Promise.all(urls.concat([location.href]).map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); })).then(function () { location.reload(); });
+  }
+  addEventListener('error', function (e) { motivo = (e && e.message) || motivo; setTimeout(recuperar, 300); });
+  addEventListener('unhandledrejection', function (e) { motivo = (e && e.reason && e.reason.message) || motivo; setTimeout(recuperar, 300); });
+  setTimeout(mostrar, 8000);
+})();
+</script>
 <script type="importmap">
 {"imports":{
   "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",

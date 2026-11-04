@@ -110,3 +110,5 @@ header p{margin:2px 0 0}
 #uni .selpos.on text{fill:var(--accent);font-weight:700}
 .modesel{display:flex;align-items:center;gap:8px;margin-left:auto}
 .modesel span{color:var(--muted);font-size:12px}
+#fallo{position:absolute;left:16px;right:16px;bottom:16px;z-index:6;background:#5a0a12;border:1px solid #ff8a8a;border-radius:10px;padding:10px 14px;font-size:13px}
+#fallo small{color:#ffd0d0}

@@ -25,6 +25,11 @@ initControls();
 refresh();
 syncSwitches();
 
+// la simulación arrancó: se cancela el aviso de fallo y el reintento automático (ver el script del index.html)
+window.__appStarted = true;
+try { sessionStorage.removeItem('ups3d-reintento'); } catch (e) { /* sin sessionStorage */ }
+document.getElementById('fallo')?.remove();
+
 const clock = new THREE.Clock();
 let fanSpeed = 0;
 let acc = 0;

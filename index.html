@@ -15,11 +15,17 @@
       <div id="paso"></div>
       <div id="toast"></div>
       <div id="tip"></div>
+      <button class="sm expandbtn" id="btnExpand3d" title="Expandir la simulación a pantalla completa (Esc para cerrar)">⤢ Expandir</button>
       <div id="hint">Arrastre para girar · rueda para acercar · clic en puertas, módulos y automáticos para operarlos</div>
     </div>
     <section id="unifilar">
-      <h2>Diagrama unifilar</h2>
-      <svg id="uni" viewBox="0 0 395 360" preserveAspectRatio="xMidYMid meet">
+      <div class="uhead">
+        <h2>Diagrama unifilar</h2>
+        <div class="modesel"><span>Bypass de rodeo:</span>
+          <div class="seg"><button class="sm on" id="btnModeConm" title="Conmutador 1-0-2: de ruptura antes de cierre">Conmutador 1-0-2</button><button class="sm" id="btnModeRodeo" title="Interruptor CB7 (configuración anterior): puede unirse a las UPS en inversor">Interruptor CB7</button></div></div>
+        <button class="sm" id="btnExpand" title="Expandir el diagrama a pantalla completa (Esc para cerrar)">⤢ Expandir</button>
+      </div>
+      <svg id="uni" viewBox="0 0 395 410" preserveAspectRatio="xMidYMid meet">
         <rect id="n_red" class="node" x="85" y="6" width="140" height="20" rx="4"/>
         <text class="t" x="155" y="20">RED ELÉCTRICA</text>
         <path id="w_g1" class="w" d="M155 26V35"/>
@@ -77,16 +83,39 @@
         <text class="l" x="243" y="257">CB4 Salida</text>
         <g id="x1" class="xmark"><line x1="10" y1="100" x2="150" y2="236"/><line x1="150" y1="100" x2="10" y2="236"/></g>
         <g id="x2" class="xmark"><line x1="160" y1="100" x2="300" y2="236"/><line x1="300" y1="100" x2="160" y2="236"/></g>
-        <path id="w_r1" class="w" d="M230 66H335V166"/>
-        <path id="w_r2" class="w" d="M335 184V284H230"/>
-        <g class="brk" data-cb="CB7" transform="translate(335,175)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
-        <text class="l" x="348" y="172">CB7 Bypass</text><text class="l" x="348" y="183">de rodeo</text>
+        <g id="uniConm">
+        <path id="w_r1" class="w" d="M230 66H335V294H165V309"/>
         <path id="w_ob" class="w" d="M80 284H230"/>
-        <path id="w_os" class="w" d="M155 284V293"/>
-        <path id="w_ol" class="w" d="M155 311V328"/>
-        <g class="brk" data-cb="CB6" transform="translate(155,302)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
-        <text class="l" x="169" y="305">CB6 Salida</text>
-        <rect id="n_load" class="node" x="125" y="328" width="60" height="20" rx="4"/><text class="t" x="155" y="342">CARGA</text>
+        <path id="w_su" class="w" d="M145 284V309"/>
+        <g id="sel" class="selector">
+          <circle class="selbody" cx="155" cy="320" r="15"/>
+          <circle class="selpin" cx="145" cy="309" r="2"/><circle class="selpin" cx="155" cy="305" r="2"/><circle class="selpin" cx="165" cy="309" r="2"/>
+          <g id="selptr" transform="translate(155,320)"><line x1="0" y1="0" x2="0" y2="-11"/><circle r="3"/></g>
+          <g class="selpos" data-sel="1"><circle class="hit" cx="136" cy="306" r="8"/><text class="t" x="136" y="309">1</text></g>
+          <g class="selpos" data-sel="0"><circle class="hit" cx="155" cy="296" r="6"/><text class="t" x="155" y="299">0</text></g>
+          <g class="selpos" data-sel="2"><circle class="hit" cx="174" cy="306" r="8"/><text class="t" x="174" y="309">2</text></g>
+        </g>
+        <text class="l" x="176" y="328">Conmutador bypass</text><text class="l" x="176" y="339">(1-0-2)</text>
+        <path id="w_so" class="w" d="M155 335V343"/>
+        <path id="w_ol" class="w" d="M155 361V378"/>
+        <g class="brk" data-cb="CB6" transform="translate(155,352)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+        <text class="l" x="169" y="355">CB6 Salida</text>
+        <rect id="n_load" class="node" x="125" y="378" width="60" height="20" rx="4"/><text class="t" x="155" y="392">CARGA</text>
+        <g id="xload" class="xmark"><line x1="122" y1="372" x2="188" y2="404"/><line x1="188" y1="372" x2="122" y2="404"/></g>
+        </g>
+        <g id="uniRodeo" style="display:none">
+          <path id="r_r1" class="w" d="M230 66H335V166"/>
+          <path id="r_r2" class="w" d="M335 184V284H230"/>
+          <g class="brk" data-cb="CB7" transform="translate(335,175)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+          <text class="l" x="348" y="172">CB7 Bypass</text><text class="l" x="348" y="183">de rodeo</text>
+          <path id="r_ob" class="w" d="M80 284H230"/>
+          <path id="r_os" class="w" d="M155 284V293"/>
+          <path id="r_ol" class="w" d="M155 311V328"/>
+          <g class="brk" data-cb="CB6" transform="translate(155,302)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
+          <text class="l" x="169" y="305">CB6 Salida</text>
+          <rect id="r_load" class="node" x="125" y="328" width="60" height="20" rx="4"/><text class="t" x="155" y="342">CARGA</text>
+          <g id="r_xload" class="xmark"><line x1="122" y1="322" x2="188" y2="354"/><line x1="188" y1="322" x2="122" y2="354"/></g>
+        </g>
       </svg>
     </section>
   </div>
@@ -111,6 +140,8 @@
         <section>
           <h2>Automáticos</h2>
           <div id="breakerRows"></div>
+          <div class="selrow"><span>Conmutador bypass<small>1 = UPS · 0 = corte · 2 = red</small></span>
+            <div class="seg"><button class="sm" data-sel="1">1 · UPS</button><button class="sm" data-sel="0">0 · Corte</button><button class="sm" data-sel="2">2 · Red</button></div></div>
         </section>
         <section>
           <h2>Red y carga</h2>
@@ -125,6 +156,7 @@
           <label class="sw"><span>Puerta frontal</span><input type="checkbox" id="swFront"></label>
           <label class="sw"><span>Puerta trasera</span><input type="checkbox" id="swRear"></label>
           <label class="sw"><span>Laterales cerrados</span><input type="checkbox" id="swSides"></label>
+          <label class="sw"><span>Cubiertas del tablero retiradas<small>Con la puerta frontal abierta</small></span><input type="checkbox" id="swCover"></label>
           <div class="row" style="margin-top:8px">
             <button class="sm cam" data-cam="front">Frente</button>
             <button class="sm cam" data-cam="iso">Interior</button>
@@ -132,12 +164,6 @@
             <button class="sm cam" data-cam="top">Superior</button>
             <button class="sm" id="btnShot">Captura PNG</button>
           </div>
-        </section>
-        <section>
-          <h2>Fotos de referencia</h2>
-          <input type="file" id="photoIn" accept="image/*" multiple hidden>
-          <button class="sm" id="btnPhoto">Agregar fotos…</button>
-          <div class="thumbs" id="thumbs"></div>
         </section>
       </div>
 
@@ -176,7 +202,6 @@
     </div>
   </aside>
 </div>
-<div id="lightbox"><img alt=""></div>
 
 <script type="importmap">
 {"imports":{

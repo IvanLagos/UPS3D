@@ -11,7 +11,7 @@ export const rack = new THREE.Group(); scene.add(rack);
 box(W + 0.04, 0.14, D + 0.04, M.plinth, 0, 0.07, 0, rack);          // zócalo oscuro
 for (const sx of [-1, 1]) for (const sz of [-1, 1])
   box(0.04, 1.85, 0.04, M.frame, sx * (W / 2 - 0.02), 1.025, sz * (D / 2 - 0.02), rack);
-box(0.52, 0.02, 0.64, M.rail, 0, 0.155, 0, rack);                  // bandeja base
+box(0.52, 0.02, 0.64, M.floor, 0, 0.155, 0, rack);                 // piso interno (bandeja base), negro
 
 // rieles de cada módulo (UPS, bancos y tapa): guías laterales a lo largo del fondo del rack, sin panel trasero
 for (const y of [1.445, 1.285, 1.125, 0.965, 0.805, 0.645, 0.485]) for (const sx of [-1, 1]) {

@@ -1,8 +1,8 @@
-/* Evolución en el tiempo: stand by, fallas por rodeo, apagado sin entrada, arranque de UPS y carga/descarga de baterías.
+/* Evolución en el tiempo: stand by, falla por rodeo, apagado sin entrada, arranque de UPS y carga/descarga de baterías.
    Una simulación acelerada: 1 segundo real = 1 minuto de funcionamiento. */
 import { toast } from '../core/interaction.js';
 import { S, E } from '../state.js';
-import { BANK_KWH, CHARGE_KW } from '../config.js';
+import { BANK_KWH, CHARGE_KW, CB_OUT } from '../config.js';
 import { powerMods } from '../model/modules.js';
 import { syncSwitches } from '../ui/sync.js';
 
@@ -21,9 +21,14 @@ export function simulate(dt) {
     }
   });
 
-  if (E.rodeoFalla) {                  // red e inversor unidos sin sincronizar: ambas UPS quedan en falla
-    E.units.forEach((x, u) => { if (x.present) { S.fault[u] = true; S.standby[u] = false; } });
-    toast('Bypass de rodeo (CB7) cerrado con las UPS en inversor: la red y el inversor se unen sin sincronizar. Ambas UPS entran en FALLA');
+  if (E.rodeoFalla) {                  // red e inversor unidos sin sincronizar: se disparan los automáticos de salida y ambas UPS quedan en falla
+    const disparados = [];
+    E.units.forEach((x, u) => {
+      if (!x.present) return;
+      S.fault[u] = true; S.standby[u] = false;
+      if (S.CB[CB_OUT[u]]) { S.CB[CB_OUT[u]] = false; S.tripped[u] = true; disparados.push(CB_OUT[u]); }
+    });
+    toast(`Bypass de rodeo (CB7) cerrado con las UPS en inversor: red e inversor sin sincronizar. ${disparados.length ? `Se disparan ${disparados.join(' y ')} por sobrecorriente y ` : ''}ambas UPS entran en FALLA`);
     syncSwitches();
   }
 

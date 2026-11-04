@@ -1,9 +1,10 @@
 /* Sincroniza los controles del panel lateral y la iluminación de los botones de las UPS con el estado actual. */
 import { $ } from '../core/dom.js';
 import { S, E } from '../state.js';
-import { BREAKERS } from '../config.js';
+import { ALL_CB } from '../config.js';
 import { doorF, doorR } from '../model/doors.js';
 import { sidesAreClosed } from '../model/rack.js';
+import { covers, isCoverRemoved, applyBypassMode } from '../model/boardCover.js';
 import { powerMods, upsBtns } from '../model/modules.js';
 
 /** Los botones de una UPS apagada no iluminan. */
@@ -18,7 +19,7 @@ export function paintUpsButtons() {
 }
 
 export function syncSwitches() {
-  for (const { id } of BREAKERS) {
+  for (const { id } of ALL_CB) {
     $('#sw_' + id).checked = S.CB[id];
     $('#bs_' + id).textContent = S.CB[id] ? 'Cerrado · deja pasar energía' : 'Abierto · corta el paso';
   }
@@ -42,4 +43,16 @@ export function syncSwitches() {
   $('#swFront').checked = doorF.userData.open;
   $('#swRear').checked = doorR.userData.open;
   $('#swSides').checked = sidesAreClosed();
+  $('#swCover').checked = covers.every(isCoverRemoved);
+  // configuración del bypass de rodeo: conmutador 1-0-2 o interruptor CB7 (la anterior)
+  const conm = S.bypassMode === 'conmutador';
+  $('#btnModeConm').classList.toggle('on', conm);
+  $('#btnModeRodeo').classList.toggle('on', !conm);
+  $('#uniConm').style.display = conm ? '' : 'none';
+  $('#uniRodeo').style.display = conm ? 'none' : '';
+  $('#uni').setAttribute('viewBox', conm ? '0 0 395 410' : '0 0 395 360');
+  $('#rowCB7').style.display = conm ? 'none' : '';
+  document.querySelector('.selrow').style.display = conm ? '' : 'none';
+  applyBypassMode(conm);
+  document.querySelectorAll('[data-sel]').forEach(el => el.classList.toggle('on', +el.dataset.sel === S.sel));   // conmutador bypass: panel y unifilar
 }

@@ -23,11 +23,13 @@ hoverBox.visible = false; scene.add(hoverBox);
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 
+const isShown = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };   // Raycaster no descarta los objetos ocultos
+
 function pick(e) {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hit = ray.intersectObjects(clickMeshes, false)[0];
+  const hit = ray.intersectObjects(clickMeshes, false).find(h => isShown(h.object));
   return hit ? hit.object : null;
 }
 

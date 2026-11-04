@@ -8,6 +8,8 @@ import { S, E } from './state.js';
 import { fans } from './model/rack.js';
 import './model/doors.js';
 import './model/breakerPanel.js';
+import './model/boardWiring.js';
+import './model/boardCover.js';
 import './model/modules.js';
 import './model/load.js';
 import './logic/actions.js';                // registra las acciones que invoca el modelo 3D
@@ -16,12 +18,10 @@ import { refresh } from './logic/refresh.js';
 import { applyLive } from './ui/visuals.js';
 import { syncSwitches } from './ui/sync.js';
 import { initControls } from './ui/controls.js';
-import { initPhotos } from './ui/photos.js';
 
 new ResizeObserver(resize).observe(view);
 resize();
 initControls();
-initPhotos();
 refresh();
 syncSwitches();
 

@@ -19,6 +19,7 @@ export const M = {
   battFace: std(0x17181a, 0.45, 0.45),
   handle: std(0x7a8089, 0.8, 0.3),
   plinth: std(0x232326, 0.4, 0.6),
+  floor: std(0x0c0c0e, 0.35, 0.7),        // piso interno del rack, negro
   blue: std(0x2f6fe0, 0.4, 0.4),
   fan: std(0x8a9098, 0.4, 0.5),
   smoke: glassLike(0x5c6874, 0.3, 0.08),  // vidrio ahumado de la puerta frontal

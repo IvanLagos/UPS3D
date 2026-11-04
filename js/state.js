@@ -4,7 +4,10 @@
 
 export const S = {
   mains: true,                                   // red eléctrica presente
-  CB: { CB1: true, CB2: true, CB3: true, CB4: true, CB5: true, CB6: true, CB7: false },   // true = cerrado
+  CB: { CB1: true, CB2: true, CB3: true, CB4: true, CB5: true, CB6: true, CB7: false },   // true = cerrado (CB7 solo existe en la configuración con interruptor de rodeo)
+  bypassMode: 'conmutador',                      // 'conmutador' (llave 1-0-2) o 'rodeo' (interruptor CB7, configuración anterior)
+  tripped: [false, false],                       // automático de salida disparado por sobrecorriente (solo con interruptor de rodeo)
+  sel: 1,                                        // conmutador bypass: 1 = UPS, 0 = corte, 2 = red
   byp: [false, false],                           // UPS en bypass estático (por UPS, pero comunicadas)
   load: 8,                                       // carga conectada (kW)
   soc: [100, 100],                               // carga de baterías de cada UPS (%)

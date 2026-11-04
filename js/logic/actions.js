@@ -4,9 +4,10 @@ import { toast } from '../core/interaction.js';
 import { tween } from '../core/tween.js';
 import { actions } from '../core/bus.js';
 import { S, E } from '../state.js';
-import { CB_OUT, breakerName } from '../config.js';
+import { CB_OUT, breakerName, SEL_TEXT } from '../config.js';
 import { doorF, OPEN_ANGLE } from '../model/doors.js';
 import { moveSides } from '../model/rack.js';
+import { covers, moveCover, isCoverRemoved } from '../model/boardCover.js';
 import { Z, allMods, battMods } from '../model/modules.js';
 import { compute } from './electrical.js';
 import { syncSwitches } from '../ui/sync.js';
@@ -25,6 +26,21 @@ export const toggleDoor = d => setDoor(d, !d.userData.open);
 
 export function setSides(closed) {
   moveSides(closed);
+  syncSwitches();
+}
+
+/** Retira o coloca las cubiertas del tablero (solo se pueden retirar con la puerta frontal abierta). */
+export function setCover(removed) {
+  if (removed && !doorF.userData.open) { toast('Abra la puerta frontal para retirar las cubiertas del tablero.'); syncSwitches(); return; }
+  covers.forEach(c => moveCover(c, removed));
+  toast(removed ? 'Cubiertas retiradas: se ven el riel, los automáticos, barras, borneras y cables' : 'Cubiertas del tablero colocadas');
+  syncSwitches();
+}
+/** Clic sobre una cubierta: retira o coloca solo esa. */
+export function toggleCover(cover) {
+  const removed = !isCoverRemoved(cover);
+  if (removed && !doorF.userData.open) { toast('Abra la puerta frontal para retirar la cubierta.'); return; }
+  moveCover(cover, removed);
   syncSwitches();
 }
 
@@ -58,7 +74,7 @@ function maniobraSalida(id, closing) {
   if (u < 0 || !E.units || closing) return;
   const x = E.units[u];
   if (!(x.present && (x.inv || x.bypassFeed) && !S.standby[u])) return;
-  if (E.rodeo && x.mode === 'bypass') return;       // en bypass con el rodeo cerrado la carga no depende de la UPS: sin riesgo
+  if (E.conm ? S.sel !== 1 : (E.rodeo && x.mode === 'bypass')) return;   // la carga no depende de la UPS (conmutador en 0 o 2; o rodeo cerrado con la UPS en bypass): sin riesgo
   S.risk[u] = true;
   toast(`⚠ Abrir ${id} con la UPS ${u + 1} en servicio puede dañar su tarjeta. Use stand by, abra la entrada y recién ahí la salida.`);
 }
@@ -72,13 +88,52 @@ export function toggleBreaker(id) {
 export function setBreakerManual(id, closed) {
   maniobraSalida(id, closed);
   S.CB[id] = closed;
+  if (closed) clearTrip(id);
 }
-
+/** Al cerrar a mano un automático de salida disparado, se repone. */
+function clearTrip(id) {
+  const u = CB_OUT.indexOf(id);
+  if (u >= 0) S.tripped[u] = false;
+}
 /** Maniobra automática de un automático durante el montaje o desmontaje. */
 export function setBreaker(id, closed) {
   if (S.CB[id] === closed) return;
   S.CB[id] = closed;
+  if (closed) clearTrip(id);
   toast(`${id} (${breakerName(id)}): ${closed ? 'CERRADO' : 'ABIERTO'}`);
+  syncSwitches();
+}
+
+/* ---------- conmutador bypass (1-0-2) ----------
+   1 = la carga cuelga de las UPS · 0 = carga cortada · 2 = la red alimenta la carga directo.
+   De ruptura antes de cierre: de 1 a 2 (o al revés) siempre pasa por 0 y la carga se queda sin energía un instante. */
+let selTimer = null;
+const SEL_PASO_MS = 1100;
+export function setSelector(target) {
+  if (selTimer || target === S.sel) return;               // mientras gira por 0 no admite otra orden
+  if (S.sel !== 0 && target !== 0) {
+    const from = S.sel;
+    S.sel = 0;
+    toast(`Conmutador bypass ${from} → ${target}: pasa por 0 y la carga se queda sin energía un instante`);
+    selTimer = setTimeout(() => { selTimer = null; S.sel = target; toast(`Conmutador bypass en ${target}: ${SEL_TEXT[target]}`); syncSwitches(); }, SEL_PASO_MS);
+  } else {
+    S.sel = target;
+    toast(`Conmutador bypass en ${target}: ${SEL_TEXT[target]}`);
+  }
+  syncSwitches();
+}
+/** Clic en el conmutador del rack: avanza 1 → 0 → 2 → (por 0) → 1. */
+export const cycleSelector = () => setSelector(S.sel === 1 ? 0 : S.sel === 0 ? 2 : 1);
+
+/** Cambia entre las dos configuraciones del bypass de rodeo: conmutador 1-0-2 o interruptor CB7 (la anterior). */
+export function setBypassMode(mode) {
+  if (S.bypassMode === mode) return;
+  clearTimeout(selTimer); selTimer = null;
+  S.bypassMode = mode;
+  S.sel = 1; S.CB.CB7 = false; S.tripped = [false, false];          // cada configuración parte con la carga en las UPS
+  toast(mode === 'conmutador'
+    ? 'Bypass de rodeo con conmutador 1-0-2: de ruptura antes de cierre, red e inversor nunca se unen'
+    : 'Bypass de rodeo con interruptor CB7 (configuración anterior): puede cerrarse con las UPS en inversor');
   syncSwitches();
 }
 
@@ -162,4 +217,4 @@ export function setBankFault(u, b) {
 }
 
 /* El modelo 3D invoca estas acciones por nombre al hacer clic */
-Object.assign(actions, { toggleDoor, toggleModule, toggleBreaker, setTransfer, setBanks, setUnitBypass });
+Object.assign(actions, { cycleSelector, toggleCover, toggleDoor, toggleModule, toggleBreaker, setTransfer, setBanks, setUnitBypass });

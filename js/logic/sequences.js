@@ -7,7 +7,7 @@ import { S, E } from '../state.js';
 import { CB_IN, CB_OUT } from '../config.js';
 import { doorF, doorR, OPEN_ANGLE } from '../model/doors.js';
 import { powerMods, unitBanks } from '../model/modules.js';
-import { setDoor, setSides, setModule, setBreaker, applyBypass } from './actions.js';
+import { setDoor, setSides, setModule, setBreaker, setSelector, applyBypass } from './actions.js';
 import { syncSwitches } from '../ui/sync.js';
 
 let seq = 0;
@@ -19,7 +19,7 @@ function showStep(n, total, txt) {
 }
 
 /**
- * Desmontaje: UPS a bypass → cerrar bypass de rodeo (CB7) → por cada UPS (primero la 2, luego la 1):
+ * Desmontaje: UPS a bypass → conmutador bypass a 2 (red directa a la carga) → por cada UPS (primero la 2, luego la 1):
  * abrir salida y entrada, esperar a que se apague y extraer el módulo con sus bancos.
  */
 export async function desmontar() {
@@ -46,8 +46,13 @@ export async function desmontar() {
   if (corriendo) { applyBypass(true); syncSwitches(); }
   if (!await ok(1700)) return;
   // 2) cerrar el bypass de rodeo: la red alimenta la carga por fuera de las UPS
-  showStep(n++, T, 'Cerrar el bypass de rodeo (CB7): la red alimenta la carga por fuera de las UPS');
-  setBreaker('CB7', true); if (!await ok(1700)) return;
+  if (E.conm) {
+    showStep(n++, T, 'Girar el conmutador bypass a 2 (pasa por 0: la carga se corta un instante): la red alimenta la carga por fuera de las UPS');
+    setSelector(2); if (!await ok(2800)) return;
+  } else {
+    showStep(n++, T, 'Cerrar el bypass de rodeo (CB7): la red alimenta la carga por fuera de las UPS');
+    setBreaker('CB7', true); if (!await ok(1700)) return;
+  }
   // 3) por cada UPS: abrir salida y entrada, y extraer el módulo con sus baterías
   for (const u of lista) {
     showStep(n++, T, `Abrir la salida ${CB_OUT[u]} y la entrada ${CB_IN[u]} de la UPS ${u + 1}`);
@@ -69,14 +74,14 @@ export async function desmontar() {
 
 /**
  * Montaje: instalar las UPS con sus bancos (automáticos abiertos) → cerrar entradas (arrancan en bypass) →
- * cerrar salidas → bajar el bypass de rodeo → comando INV a inversor.
+ * cerrar salidas → conmutador bypass a 1 → comando INV a inversor.
  */
 export async function montar() {
   const tok = ++seq; const ok = async ms => { await sleep(ms); return tok === seq; };
   // UPS a las que les falta equipo, de abajo hacia arriba
   const falta = [1, 0].filter(u => powerMods[u].userData.state !== 'in' || unitBanks(u).some(b => b.userData.state !== 'in'));
   const needCB6 = !S.CB.CB6;
-  const T = 1 + falta.length + 1 + 1 + (S.CB.CB7 ? 1 : 0) + 1 + (needCB6 ? 1 : 0) + 3;
+  const T = 1 + falta.length + 1 + 1 + ((S.bypassMode === 'conmutador' ? S.sel !== 1 : S.CB.CB7) ? 1 : 0) + 1 + (needCB6 ? 1 : 0) + 3;
   let n = 1;
   showStep(n++, T, 'Abrir puertas'); setDoor(doorF, true, true); setDoor(doorR, true, true);
   if (!await ok(1000)) return;
@@ -99,9 +104,14 @@ export async function montar() {
   for (const u of [1, 0]) { setBreaker(CB_OUT[u], true); if (!await ok(900)) return; }
   if (!await ok(700)) return;
   // 4) bajar el bypass de rodeo: la carga pasa a las UPS (en bypass)
-  if (S.CB.CB7) {
-    showStep(n++, T, 'Bajar el bypass de rodeo (CB7): la carga pasa a las UPS (en bypass)');
-    setBreaker('CB7', false); if (!await ok(1600)) return;
+  if (S.bypassMode === 'conmutador' ? S.sel !== 1 : S.CB.CB7) {
+    if (S.bypassMode === 'conmutador') {
+      showStep(n++, T, 'Girar el conmutador bypass a 1 (pasa por 0: la carga se corta un instante): la carga pasa a las UPS (en bypass)');
+      setSelector(1); if (!await ok(2800)) return;
+    } else {
+      showStep(n++, T, 'Bajar el bypass de rodeo (CB7): la carga pasa a las UPS (en bypass)');
+      setBreaker('CB7', false); if (!await ok(1600)) return;
+    }
   }
   // 5) por comando, las dos UPS pasan a inversor
   showStep(n++, T, 'Comando INV: las dos UPS pasan de bypass a inversor');

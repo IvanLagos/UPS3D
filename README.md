@@ -20,7 +20,7 @@ Los módulos ES necesitan un servidor local (no funcionan abriendo `index.html` 
 
 - Abrir/cerrar puertas y laterales, extraer UPS y bancos (`Ctrl+clic` los retira por completo).
 - **Montar / Desmontar** el rack con secuencias automáticas que maniobran los automáticos sin botar la carga.
-- Operar los automáticos **CB1…CB7** (en el rack, el panel lateral o el unifilar) y ver sus consecuencias.
+- Operar los automáticos **CB1…CB6** y el **conmutador bypass 1-0-2** (en el rack, el panel lateral o el unifilar) y ver sus consecuencias.
 - Botones de cada UPS: **INV** (inversor), **BYP** (bypass estático), **TRAS** (traspaso de carga / stand by), **BAT** (1 o 2 bancos).
 - Simular fallas de UPS y de bancos, corte de red y variar la carga (1 s real = 1 min simulado).
 
@@ -32,14 +32,23 @@ Los módulos ES necesitan un servidor local (no funcionan abriendo `index.html` 
 | CB1 / CB3 | Entrada UPS 1 / UPS 2 |
 | CB2 / CB4 | Salida UPS 1 / UPS 2 |
 | CB6 | Salida a la carga |
-| CB7 | Bypass de rodeo (red directa a la salida, por fuera de las UPS) |
+| Conmutador 1-0-2 | Bypass de rodeo: 1 = la carga cuelga de las UPS · 0 = carga cortada · 2 = la red alimenta la carga directo, por fuera de las UPS |
+
+### Dos configuraciones del bypass de rodeo
+
+Desde el botón **«Bypass de rodeo»** del diagrama unifilar se puede alternar entre:
+
+- **Conmutador 1-0-2** (por defecto): de ruptura antes de cierre; al pasar de 1 a 2 siempre pasa por 0 y la carga se corta un instante. Red e inversor nunca se unen.
+- **Interruptor CB7** (configuración anterior): un automático que puede cerrarse con las UPS en inversor. Si se hace, red e inversor se unen sin sincronizar: **se disparan CB2 y CB4 por sobrecorriente y ambas UPS entran en falla**; los automáticos hay que reponerlos a mano.
+
+Al cambiar de configuración el rack 3D, el panel lateral, el unifilar y las secuencias de montaje y desmontaje se adaptan.
 
 ### Reglas principales de la lógica
 
 - Las dos UPS están comunicadas por un cable: siempre están **ambas en bypass o ambas en inversor**.
 - Una UPS que arranca entra en bypass; pasa a inversor solo por comando (INV). La que se apagó en stand by arranca directo en inversor.
 - El bypass estático funciona siempre que la UPS tenga tensión de entrada; sin entrada en bypass, la carga cae y la UPS se apaga a los 2 s.
-- Cerrar **CB7** con las UPS en inversor une red e inversor sin sincronizar: **ambas UPS entran en falla**.
+- El conmutador bypass 1-0-2 es de ruptura antes de cierre: de 1 a 2 (o al revés) **siempre pasa por 0** y la carga se queda sin energía un instante, así que red e inversor nunca quedan unidos.
 - Cada UPS usa los bancos configurados (BAT). Con menos bancos sanos que los configurados, las baterías se inhiben y se alarma.
 
 ## Estructura del proyecto
@@ -70,6 +79,8 @@ UPS3D/
     │   ├── rack.js         Estructura, rieles, techo, laterales, ventiladores
     │   ├── doors.js        Puertas (vidrio, goma, logo, placa, rejillas)
     │   ├── breakerPanel.js Tablero de automáticos
+    │   ├── boardWiring.js  Barras, borneras y cables del tablero
+    │   ├── boardCover.js   Cubiertas desmontables del tablero (pilotos arriba, interruptores abajo)
     │   ├── modules.js      UPS y bancos de baterías
     │   └── load.js         Carga y luz verde
     ├── logic/            Lógica eléctrica
@@ -81,8 +92,7 @@ UPS3D/
     └── ui/               Interfaz
         ├── sync.js         Sincroniza controles del panel con el estado
         ├── visuals.js      LEDs, unifilar, alarmas, métricas y pantallas de las UPS
-        ├── controls.js     Cableado de botones, interruptores, cámaras y captura PNG
-        └── photos.js       Fotos de referencia
+        └── controls.js     Cableado de botones, interruptores, cámaras y captura PNG
 ```
 
 ### Flujo de datos

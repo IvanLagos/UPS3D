@@ -4,11 +4,11 @@ import { tween } from '../core/tween.js';
 import { toast } from '../core/interaction.js';
 import { renderer, scene, camera, controls } from '../core/scene.js';
 import { S } from '../state.js';
-import { BREAKERS } from '../config.js';
+import { ALL_CB } from '../config.js';
 import { doorF, doorR } from '../model/doors.js';
 import {
-  setDoor, setSides, setBypass, setTransfer, setFault, setBanks, setBankFault,
-  toggleBreaker, setBreakerManual,
+  setDoor, setSides, setCover, setBypass, setTransfer, setFault, setBanks, setBankFault,
+  toggleBreaker, setBreakerManual, setSelector, setBypassMode,
 } from '../logic/actions.js';
 import { montar, desmontar } from '../logic/sequences.js';
 import { syncSwitches } from './sync.js';
@@ -27,16 +27,29 @@ function flyTo(key) {
 
 function buildBreakerRows() {
   const rows = $('#breakerRows');
-  for (const { id, name } of BREAKERS) {
-    const l = document.createElement('label'); l.className = 'sw';
+  for (const { id, name } of ALL_CB) {
+    const l = document.createElement('label'); l.className = 'sw'; l.id = 'row' + id;
     l.innerHTML = `<span>${id} · ${(name[0] + name.slice(1).toLowerCase()).replace('ups', 'UPS')}<small id="bs_${id}"></small></span><input type="checkbox" id="sw_${id}">`;
     rows.appendChild(l);
     l.querySelector('input').addEventListener('change', e => { setBreakerManual(id, e.target.checked); syncSwitches(); });
   }
 }
 
+/** Expande una zona (simulación 3D o unifilar) a pantalla completa y la vuelve a su lugar; solo una a la vez. */
+const EXPANDIBLES = [{ box: '#view', btn: '#btnExpand3d' }, { box: '#unifilar', btn: '#btnExpand' }];
+function setExpanded(boxSel, on) {
+  for (const z of EXPANDIBLES) {
+    const open = on && z.box === boxSel;
+    $(z.box).classList.toggle('expanded', open);
+    $(z.btn).textContent = open ? '✕ Cerrar' : '⤢ Expandir';
+  }
+}
+
 export function initControls() {
   buildBreakerRows();
+
+  for (const z of EXPANDIBLES) $(z.btn).onclick = () => setExpanded(z.box, !$(z.box).classList.contains('expanded'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setExpanded(null, false); });
 
   $('#btnMontar').onclick = montar;
   $('#btnDesmontar').onclick = desmontar;
@@ -56,6 +69,14 @@ export function initControls() {
   $('#swFront').onchange = e => setDoor(doorF, e.target.checked);
   $('#swRear').onchange = e => setDoor(doorR, e.target.checked);
   $('#swSides').onchange = e => setSides(e.target.checked);
+  $('#swCover').onchange = e => setCover(e.target.checked);
+
+  // configuración del bypass de rodeo (botón del diagrama unifilar)
+  $('#btnModeConm').onclick = () => setBypassMode('conmutador');
+  $('#btnModeRodeo').onclick = () => setBypassMode('rodeo');
+
+  // conmutador bypass 1-0-2: botones del panel y posiciones del diagrama unifilar
+  document.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', () => setSelector(+el.dataset.sel)));
 
   // los automáticos del diagrama unifilar también se operan con clic
   document.querySelectorAll('#uni .brk').forEach(g => g.addEventListener('click', () => toggleBreaker(g.dataset.cb)));

@@ -3,11 +3,15 @@
 import { $ } from '../core/dom.js';
 import { tween } from '../core/tween.js';
 import { S, E } from '../state.js';
-import { BREAKERS, CB_IN, CB_OUT, MODE_TXT, BANK_KWH } from '../config.js';
+import { RAIL_ITEMS, CB_IN, CB_OUT, MODE_TXT, BANK_KWH } from '../config.js';
 import { powerMods, battMods } from '../model/modules.js';
 import { breakers } from '../model/breakerPanel.js';
+import { bars, wires, setLive } from '../model/boardWiring.js';
 import { bulbMat, cableMat, lossMark } from '../model/load.js';
 import { paintUpsButtons } from './sync.js';
+
+const SEL_ANGLE = { 1: Math.PI / 4, 0: 0, 2: -Math.PI / 4 };   // giro de la manija del conmutador en el rack
+const SEL_DEG = { 1: -45, 0: 0, 2: 45 };                          // giro de la aguja en el unifilar
 
 const svgSet = (id, on, cls = '') => {
   const el = $('#' + id);
@@ -30,16 +34,28 @@ export function applyVisuals() {
     setLed(m.userData.ledMat, bad ? 0xff3030 : on ? (x.discharging ? 0xffb020 : 0x3aa0ff) : 0);
   }
 
-  // palancas y pilotos de los automáticos
-  const lamp = { CB1: units[0].inAvail, CB2: units[0].deliver, CB3: units[1].inAvail, CB4: units[1].deliver, CB5: gen, CB6: out, CB7: E.rodeo };
-  for (const { id } of BREAKERS) {
-    const b = breakers[id], closed = S.CB[id];
+  // palancas, conmutador bypass y pilotos
+  const lamp = { CB1: units[0].inAvail, CB2: units[0].deliver, CB3: units[1].inAvail, CB4: units[1].deliver, CB5: gen, CB6: out, SEL: E.rodeo };
+  for (const { id, pilot } of RAIL_ITEMS) {
+    const b = breakers[id];
+    if (b.lever) {
+      const closed = S.CB[id];
+      tween(b.lever.position, 'y', b.y + (closed ? 0.011 : -0.011), 0.25);
+      b.leverMat.color.setHex(closed ? 0x2fd27a : 0x888f99);
+      b.leverMat.emissive.setHex(closed ? 0x0c4a2a : 0x000000);
+    }
+    const red = pilot.color === 'red';                       // piloto de encendido: enciende donde hay tensión
+    setLed(b.lampMat, lamp[id] ? (red ? 0xff1010 : 0x00ff55) : 0, red ? 0x560c0c : 0x0a5222);
+  }
+  tween(breakers.SEL.handle.rotation, 'z', SEL_ANGLE[S.sel], 0.45);   // el conmutador gira a su posición
+  {                                                                    // palanca del CB7 (configuración anterior)
+    const b = breakers.CB7, closed = S.CB.CB7;
     tween(b.lever.position, 'y', b.y + (closed ? 0.011 : -0.011), 0.25);
     b.leverMat.color.setHex(closed ? 0x2fd27a : 0x888f99);
     b.leverMat.emissive.setHex(closed ? 0x0c4a2a : 0x000000);
-    setLed(b.lampMat, lamp[id] ? 0x00ff55 : 0, 0x0a5222);
-    setLed(b.redMat, !closed ? 0xff1010 : 0, 0x560c0c);
   }
+
+  applyBoardWiring();
 
   // luz de la carga: verde tipo semáforo, sin resplandor; si se pierde la carga se apaga y aparece una X roja
   bulbMat.color.setHex(out ? 0x00b84a : 0x1a1d1b);     // apagada: gris oscuro
@@ -50,6 +66,21 @@ export function applyVisuals() {
 
   applyUnifilar();
   applyAlarms();
+}
+
+/** Barras y cables del tablero: amarillo = red/bypass, verde = salida de UPS en inversor o baterías. */
+function applyBoardWiring() {
+  const { units, gen } = E;
+  const YEL = 0xf0b429, GRN = 0x22ff88;
+  const delInv = E.del.some(x => x.mode === 'normal' || x.mode === 'bateria');
+  const outHex = delInv ? GRN : YEL;                                   // en bypass o por el rodeo la salida va con la red (amarillo)
+  const busOut = E.del.length > 0 || E.rodeo;
+  setLive(bars.RED, S.mains, YEL, 0.7);
+  setLive(bars.ENT, gen, YEL, 0.7);
+  setLive(bars.SAL, busOut, outHex, 0.7);
+  setLive(wires.CB5, S.mains, YEL); setLive(wires.CB1, gen, YEL); setLive(wires.CB3, gen, YEL); setLive(wires.SEL, gen, YEL);
+  [0, 1].forEach(u => setLive(wires[['CB2', 'CB4'][u]], units[u].deliver, units[u].mode === 'bypass' ? YEL : GRN));
+  setLive(wires.CB6, busOut, outHex);
 }
 
 /** Diagrama unifilar: la red en amarillo, lo posterior al rectificador/inversor en verde. */
@@ -81,12 +112,28 @@ function applyUnifilar() {
     $(`#blk${n}`).classList.toggle('fault', x.stateFault);
     $(`#x${n}`).classList.toggle('show', x.stateFault);
   });
-  const rod = E.rodeo, byColor = anyBypass || (rod && !E.del.length) ? 'byp' : '';
-  svgSet('w_r1', gen, 'byp'); svgSet('w_r2', rod, 'byp');
-  svgSet('w_ob', E.del.length > 0 || rod, byColor);
-  svgSet('w_os', E.del.length > 0 || rod, byColor);
-  svgSet('w_ol', out, byColor);
-  nodeSet('n_red', S.mains, true); nodeSet('n_load', out, anyBypass || (rod && !E.del.length));
+  const rod = E.rodeo, upsBus = E.busUps;
+  const upsColor = upsBus.some(x => x.mode === 'normal' || x.mode === 'bateria') ? '' : 'byp';   // bus de las UPS: verde en inversor, amarillo en bypass
+  const loadColor = anyBypass || rod ? 'byp' : '';
+  nodeSet('n_red', S.mains, true);
+  $('#xload').classList.toggle('show', !out);                // carga perdida (al pasar por 0, sin energía o salida abierta): X roja sobre la carga
+  $('#r_xload').classList.toggle('show', !out);
+  if (E.conm) {                                              // conmutador 1-0-2
+    svgSet('w_r1', gen, 'byp');                              // red hacia el contacto 2 del conmutador
+    svgSet('w_ob', upsBus.length > 0, upsColor);             // bus de salida de las UPS
+    svgSet('w_su', upsBus.length > 0, upsColor);             // bus → contacto 1 del conmutador
+    svgSet('w_so', E.del.length > 0 || rod, loadColor);      // conmutador → CB6
+    svgSet('w_ol', out, loadColor);
+    nodeSet('n_load', out, anyBypass || rod);
+    $('#selptr').setAttribute('transform', `translate(155,320) rotate(${SEL_DEG[S.sel]})`);   // aguja del conmutador
+  } else {                                                   // configuración anterior: interruptor CB7 de bypass de rodeo
+    const byColor = anyBypass || (rod && !E.del.length) ? 'byp' : '';
+    svgSet('r_r1', gen, 'byp'); svgSet('r_r2', rod, 'byp');
+    svgSet('r_ob', E.del.length > 0 || rod, byColor);
+    svgSet('r_os', E.del.length > 0 || rod, byColor);
+    svgSet('r_ol', out, byColor);
+    nodeSet('r_load', out, anyBypass || (rod && !E.del.length));
+  }
   document.querySelectorAll('#uni .brk').forEach(g => {
     const closed = S.CB[g.dataset.cb], l = g.querySelector('line');
     g.classList.toggle('closed', closed);
@@ -98,7 +145,8 @@ function applyUnifilar() {
 function applyAlarms() {
   const { units, out, src, gen } = E;
   const al = [];
-  if (E.rodeo) al.push(['Bypass de rodeo cerrado (CB7): la red alimenta el bus de salida por fuera de las UPS', '']);
+  if (E.rodeo) al.push([E.conm ? 'Conmutador bypass en 2: la red alimenta la carga directo, por fuera de las UPS' : 'Bypass de rodeo cerrado (CB7): la red alimenta el bus de salida por fuera de las UPS', '']);
+  if (E.conm && S.sel === 0) al.push(['Conmutador bypass en 0: carga desconectada (ni red ni UPS)', 'bad']);
   if (!S.mains) al.push(['Falla de red eléctrica', 'bad']);
   else if (!S.CB.CB5) al.push(['General abierto (CB5): sin tensión en las UPS', 'bad']);
   if (E.overload) al.push([E.overloadBypass ? 'Sobrecarga: transferido a bypass' : 'Sobrecarga: inversor apagado', 'bad']);
@@ -109,8 +157,8 @@ function applyAlarms() {
     if (S.risk[u]) al.push([`UPS ${n}: maniobra de salida con la UPS en servicio, riesgo de daño en la tarjeta`, 'bad']);
     if (x.standby) al.push([`UPS ${n} en stand by: su carga está en la UPS ${2 - u}. Para retirarla abra ${CB_IN[u]} y luego ${CB_OUT[u]}`, '']);
     if (x.stateFault) al.push([`FALLA en la UPS ${n}: aislada del sistema${E.units[1 - u].deliver ? `, la carga la sostiene la UPS ${2 - u}` : ''}`, 'bad']);
-    if (!S.CB[CB_OUT[u]]) al.push([`Salida UPS ${n} abierta (${CB_OUT[u]}): aislada de la carga`, 'bad']);
-    if (x.mode === 'transfer' && x.outClosed) al.push([`UPS ${n} sin tensión en la entrada en bypass: la carga cayó y se apagará en ${Math.max(0, 2 - S.dropT[u]).toFixed(1)} s`, 'bad']);
+    if (!S.CB[CB_OUT[u]]) al.push([S.tripped[u] ? `Salida UPS ${n} disparada por sobrecorriente (${CB_OUT[u]}): repóngala a mano después de restablecer la UPS` : `Salida UPS ${n} abierta (${CB_OUT[u]}): aislada de la carga`, 'bad']);
+    if (x.mode === 'transfer' && x.outClosed && E.selUps) al.push([`UPS ${n} sin tensión en la entrada en bypass: la carga cayó y se apagará en ${Math.max(0, 2 - S.dropT[u]).toFixed(1)} s`, 'bad']);
     if (x.mode === 'apagada') al.push(S.manual[u] ? [`UPS ${n} apagada tras perder el suministro en stand by: la carga sigue en la UPS ${2 - u}. Puede abrir ${CB_OUT[u]} y retirarla`, ''] : S.byp[u] ? [`UPS ${n} apagada: perdió la entrada estando en bypass`, 'bad'] : [`UPS ${n} apagada: espera tensión en su entrada (${CB_IN[u]}) para arrancar`, '']);
     if (x.healthy < x.cfg) {
       const probs = x.bk.map((s, b) => (s === 'fault' ? `banco ${b + 1} en falla` : s === 'miss' ? `banco ${b + 1} no instalado` : null)).filter(Boolean).join(' y ');
@@ -123,7 +171,7 @@ function applyAlarms() {
   if (E.nM === 0) al.push(['Sin UPS instaladas', 'bad']);
   else if (E.nM === 1) al.push(['Una sola UPS operativa: sin redundancia', '']);
   if (!S.CB.CB6) al.push(['Salida general abierta (CB6): carga desenergizada', 'bad']);
-  else if (!out) al.push(['Sin alimentación en la salida', 'bad']);
+  else if (!out && !(E.conm && S.sel === 0)) al.push(['Sin alimentación en la salida', 'bad']);
   $('#alarms').innerHTML = (al.length ? al : [['Sin alarmas · sistema normal', 'ok']]).map(([t, c]) => `<li class="${c}">${t}</li>`).join('');
 }
 

@@ -19,8 +19,8 @@ function addLouver(parent, cx, cy, w, h, n, dz) {
 
 /** Ventana de vidrio con esquinas redondeadas, goma negra que la rodea y marco que rellena cada esquina. */
 function addGlassWindow(pivot) {
-  const R = 0.05, ww = 0.43, wh = 1.12, hx = ww / 2, hy = wh / 2;
-  const cx = 0.29, cy = 1.18;                                   // centro de la ventana en la puerta
+  const R = 0.05, ww = 0.43, wh = 1.27, hx = ww / 2, hy = wh / 2;     // la ventana sube hasta 1,89 m: se ven todas las luces piloto
+  const cx = 0.29, cy = 1.255;                                   // centro de la ventana en la puerta
 
   const shape = new THREE.Shape(); roundedRect(shape, hx, hy, R);
   const glass = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.01, bevelEnabled: false }).translate(0, 0, -0.005), M.smoke);
@@ -35,7 +35,7 @@ function addGlassWindow(pivot) {
   gasket.position.set(cx, cy, 0); gasket.castShadow = true; pivot.add(gasket);
 
   // el marco rellena cada esquina con un cuarto de círculo
-  for (const [px, py, sx, sy] of [[0.075, 0.62, 1, 1], [0.505, 0.62, -1, 1], [0.075, 1.74, 1, -1], [0.505, 1.74, -1, -1]]) {
+  for (const [px, py, sx, sy] of [[0.075, 0.62, 1, 1], [0.505, 0.62, -1, 1], [0.075, 1.89, 1, -1], [0.505, 1.89, -1, -1]]) {
     const f = new THREE.Shape(), a0 = Math.atan2(-sy, 0), a1 = Math.atan2(0, -sx);
     f.moveTo(0, 0); f.lineTo(sx * R, 0);
     f.absarc(sx * R, sy * R, R, a0, a1, Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0)) < 0);
@@ -49,8 +49,8 @@ function addGlassWindow(pivot) {
 function addHeader(pivot) {
   const logoTex = new THREE.TextureLoader().load('assets/logo-fernandez-fica.png');
   logoTex.colorSpace = THREE.SRGBColorSpace; logoTex.anisotropy = 8;
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.27, 0.27 / 3.85), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, toneMapped: false }));
-  logo.position.set(0.165, 1.855, 0.0115); pivot.add(logo);
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.23, 0.23 / 3.85), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, toneMapped: false }));
+  logo.position.set(0.15, 1.937, 0.0115); pivot.add(logo);
 
   const pc = document.createElement('canvas'); pc.width = 500; pc.height = 280;
   const g = pc.getContext('2d');
@@ -62,8 +62,8 @@ function addHeader(pivot) {
   g.fillText('Potencia total 20 kW', 250, 140);
   g.fillText('220–240 VAC · 240 VDC', 250, 210);
   const plateTex = new THREE.CanvasTexture(pc); plateTex.colorSpace = THREE.SRGBColorSpace; plateTex.anisotropy = 8;
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.125, 0.07), new THREE.MeshBasicMaterial({ map: plateTex, toneMapped: false }));
-  plate.position.set(0.52, 1.855, 0.0115); pivot.add(plate);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.105, 0.0588), new THREE.MeshBasicMaterial({ map: plateTex, toneMapped: false }));
+  plate.position.set(0.52, 1.937, 0.0115); pivot.add(plate);
 }
 
 function makeDoor(side) {
@@ -75,9 +75,9 @@ function makeDoor(side) {
   const leaf = (w, h, x, y) => box(w, h, 0.02, M.frame, dir * x, y, 0, pivot);
   if (front) {
     leaf(0.6, 0.47, 0.3, 0.385);           // panel inferior con ventilación
-    leaf(0.6, 0.23, 0.3, 1.855);           // franja superior
-    leaf(0.075, 1.12, 0.0375, 1.18);       // lado bisagra
-    leaf(0.095, 1.12, 0.5525, 1.18);       // lado cerradura
+    leaf(0.6, 0.08, 0.3, 1.93);            // franja superior
+    leaf(0.075, 1.27, 0.0375, 1.255);      // lado bisagra
+    leaf(0.095, 1.27, 0.5525, 1.255);     // lado cerradura
     addGlassWindow(pivot);
     addHeader(pivot);
     // rejilla con ventilador: atraviesa la puerta, se ve por fuera y por dentro
@@ -104,9 +104,3 @@ function makeDoor(side) {
 
 export const doorF = makeDoor('front');
 export const doorR = makeDoor('rear');
-
-/* placa para una foto de referencia, sobre el panel inferior de la puerta frontal */
-export const photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.12), new THREE.MeshBasicMaterial({ transparent: true }));
-photoPlane.position.set(0.3, 0.535, 0.021);
-photoPlane.visible = false;
-doorF.add(photoPlane);

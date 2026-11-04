@@ -115,11 +115,24 @@ Pegue la línea que imprime en `js/acceso-config.js` (reemplazando `CLAVE_HASH`)
 
 > Es una barrera del lado del navegador, pensada para cuidar la presentación frente a terceros: todo el código sigue siendo público en GitHub y alguien con conocimientos podría saltársela. Para una protección real hay que usar un repositorio privado o un servidor con autenticación.
 
+## Versionado de archivos (evita mezclas de caché en GitHub Pages)
+
+GitHub Pages deja los archivos en la caché del navegador unos 10 minutos. Para que el navegador nunca mezcle archivos viejos con nuevos
+tras una actualización, `index.html` apunta a cada archivo con una versión (`?v=<huella del contenido>`).
+**Antes de cada commit** ejecute:
+
+```bash
+python herramientas/version.py
+```
+
+El script reescribe el `importmap`, el `<link>` del CSS y el `<script>` de entrada de `index.html`; solo cambia la versión de los archivos modificados.
+
 ## Subir a GitHub
 
 ```bash
 cd UPS3D
 git init
+python herramientas/version.py
 git add .
 git commit -m "UPS Modular 3D: visor 3D de UPS modulares"
 git branch -M main

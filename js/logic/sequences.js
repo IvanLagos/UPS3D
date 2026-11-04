@@ -7,7 +7,8 @@ import { S, E } from '../state.js';
 import { CB_IN, CB_OUT } from '../config.js';
 import { doorF, doorR, OPEN_ANGLE } from '../model/doors.js';
 import { powerMods, unitBanks } from '../model/modules.js';
-import { setDoor, setSides, setModule, setBreaker, setSelector, applyBypass } from './actions.js';
+import { covers, isCoverOpen } from '../model/boardCover.js';
+import { setDoor, setSides, setCover, setModule, setBreaker, setSelector, applyBypass } from './actions.js';
 import { syncSwitches } from '../ui/sync.js';
 
 let seq = 0;
@@ -81,8 +82,13 @@ export async function montar() {
   // UPS a las que les falta equipo, de abajo hacia arriba
   const falta = [1, 0].filter(u => powerMods[u].userData.state !== 'in' || unitBanks(u).some(b => b.userData.state !== 'in'));
   const needCB6 = !S.CB.CB6;
-  const T = 1 + falta.length + 1 + 1 + ((S.bypassMode === 'conmutador' ? S.sel !== 1 : S.CB.CB7) ? 1 : 0) + 1 + (needCB6 ? 1 : 0) + 3;
+  const T = 1 + falta.length + 1 + 1 + ((S.bypassMode === 'conmutador' ? S.sel !== 1 : S.CB.CB7) ? 1 : 0) + 1 + (needCB6 ? 1 : 0) + 4;
   let n = 1;
+  // lo primero: cerrar las cubiertas del tablero (pilotos y automáticos), si estaban abiertas
+  const abiertas = covers.some(isCoverOpen);
+  showStep(n++, T, abiertas ? 'Cerrar las cubiertas del tablero (pilotos y automáticos)' : 'Cubiertas del tablero cerradas');
+  if (abiertas) setCover(false);
+  if (!await ok(abiertas ? 1200 : 300)) return;
   showStep(n++, T, 'Abrir puertas'); setDoor(doorF, true, true); setDoor(doorR, true, true);
   if (!await ok(1000)) return;
   // 1) instalar las UPS con sus bancos, con todos sus automáticos abiertos

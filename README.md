@@ -80,7 +80,7 @@ UPS3D/
     │   ├── doors.js        Puertas (vidrio, goma, logo, placa, rejillas)
     │   ├── breakerPanel.js Tablero de automáticos
     │   ├── boardWiring.js  Barras, borneras y cables del tablero
-    │   ├── boardCover.js   Cubiertas desmontables del tablero (pilotos arriba, interruptores abajo)
+    │   ├── boardCover.js   Cubiertas con bisagra del tablero (pilotos arriba, interruptores abajo)
     │   ├── modules.js      UPS y bancos de baterías
     │   └── load.js         Carga y luz verde
     ├── logic/            Lógica eléctrica

@@ -7,7 +7,7 @@ import { S, E } from '../state.js';
 import { CB_OUT, breakerName, SEL_TEXT } from '../config.js';
 import { doorF, OPEN_ANGLE } from '../model/doors.js';
 import { moveSides } from '../model/rack.js';
-import { covers, moveCover, isCoverRemoved } from '../model/boardCover.js';
+import { covers, moveCover, isCoverOpen } from '../model/boardCover.js';
 import { Z, allMods, battMods } from '../model/modules.js';
 import { compute } from './electrical.js';
 import { syncSwitches } from '../ui/sync.js';
@@ -18,6 +18,7 @@ export function setDoor(d, open, silent) {
     if (!silent) toast('Guarde los módulos extraídos antes de cerrar la puerta frontal.');
     syncSwitches(); return;
   }
+  if (!open && d === doorF) covers.forEach(c => { if (isCoverOpen(c)) moveCover(c, false); });   // las cubiertas se cierran antes de cerrar la puerta
   d.userData.open = open;
   tween(d.rotation, 'y', open ? OPEN_ANGLE : 0, 0.9);
   syncSwitches();
@@ -29,18 +30,18 @@ export function setSides(closed) {
   syncSwitches();
 }
 
-/** Retira o coloca las cubiertas del tablero (solo se pueden retirar con la puerta frontal abierta). */
-export function setCover(removed) {
-  if (removed && !doorF.userData.open) { toast('Abra la puerta frontal para retirar las cubiertas del tablero.'); syncSwitches(); return; }
-  covers.forEach(c => moveCover(c, removed));
-  toast(removed ? 'Cubiertas retiradas: se ven el riel, los automáticos, barras, borneras y cables' : 'Cubiertas del tablero colocadas');
+/** Abre o cierra las cubiertas del tablero (solo se pueden abrir con la puerta frontal abierta). */
+export function setCover(open) {
+  if (open && !doorF.userData.open) { toast('Abra la puerta frontal para abrir las cubiertas del tablero.'); syncSwitches(); return; }
+  covers.forEach(c => moveCover(c, open));
+  toast(open ? 'Cubiertas abiertas: se ven el riel, los automáticos, barras, borneras y cables' : 'Cubiertas del tablero cerradas');
   syncSwitches();
 }
-/** Clic sobre una cubierta: retira o coloca solo esa. */
+/** Clic sobre una cubierta: abre o cierra solo esa. */
 export function toggleCover(cover) {
-  const removed = !isCoverRemoved(cover);
-  if (removed && !doorF.userData.open) { toast('Abra la puerta frontal para retirar la cubierta.'); return; }
-  moveCover(cover, removed);
+  const open = !isCoverOpen(cover);
+  if (open && !doorF.userData.open) { toast('Abra la puerta frontal para abrir la cubierta.'); return; }
+  moveCover(cover, open);
   syncSwitches();
 }
 

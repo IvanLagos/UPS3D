@@ -4,7 +4,7 @@ import { S, E } from '../state.js';
 import { ALL_CB } from '../config.js';
 import { doorF, doorR } from '../model/doors.js';
 import { sidesAreClosed } from '../model/rack.js';
-import { covers, isCoverRemoved, applyBypassMode } from '../model/boardCover.js';
+import { covers, isCoverOpen, applyBypassMode } from '../model/boardCover.js';
 import { powerMods, upsBtns } from '../model/modules.js';
 
 /** Los botones de una UPS apagada no iluminan. */
@@ -43,7 +43,7 @@ export function syncSwitches() {
   $('#swFront').checked = doorF.userData.open;
   $('#swRear').checked = doorR.userData.open;
   $('#swSides').checked = sidesAreClosed();
-  $('#swCover').checked = covers.every(isCoverRemoved);
+  $('#swCover').checked = covers.every(isCoverOpen);
   // configuración del bypass de rodeo: conmutador 1-0-2 o interruptor CB7 (la anterior)
   const conm = S.bypassMode === 'conmutador';
   $('#btnModeConm').classList.toggle('on', conm);

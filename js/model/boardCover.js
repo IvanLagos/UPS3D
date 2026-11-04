@@ -2,7 +2,8 @@
    - Cubierta de pilotos (arriba): 7 luces de encendido/apagado: 3 rojas (general, salida, rodeo) y 4 verdes (entradas y salidas de las UPS).
    - Cubierta de automáticos (abajo): ranuras por las que solo asoma el interruptor de cada uno, con su placa de texto.
    Detrás quedan el riel con los cuerpos de los automáticos, las barras, las borneras y los cables.
-   Cada cubierta se retira con la puerta frontal abierta (clic en ella, o interruptor del panel para ambas). */
+   Cada cubierta es una tapa con bisagra en el borde izquierdo: se abre hacia afuera (no se retira) con la puerta frontal
+   abierta, con un clic en ella o con el interruptor del panel para ambas. */
 import * as THREE from 'three';
 import { M, std } from '../core/materials.js';
 import { box, labelPlane, textTex } from '../core/helpers.js';
@@ -14,7 +15,7 @@ import { panelGrp, breakerPos, breakers, showBypassModel } from './breakerPanel.
 
 const COVER_W = 0.55, COVER_Z = 0.357, T = 0.008;   // ancho, profundidad (centro) y espesor de las placas
 const FACE_Z = COVER_Z + T / 2;                     // cara exterior
-const SLIDE = 1.0;                                  // cuánto sale hacia adelante al retirarla
+const OPEN_ANGLE = -1.75;                           // giro al abrirla (≈100° hacia afuera) sobre la bisagra del borde izquierdo
 
 /** Placa crema entre las alturas y0..y1, con ranuras opcionales (`holes`: rectangulares { x, y, hw, hh } o redondas { x, y, r }) y 4 tornillos. */
 function makeCover(y0, y1, tip, holes = []) {
@@ -38,14 +39,18 @@ function makeCover(y0, y1, tip, holes = []) {
     s.position.set(x, y, FACE_Z + 0.003); g.add(s);
     box(0.01, 0.0015, 0.0015, M.dark, x, y, FACE_Z + 0.0062, g).rotation.z = Math.PI / 4;
   }
-  g.userData.removed = false;
+  g.userData.open = false;
   markClick(g, () => actions.toggleCover(g));
-  panelGrp.add(g);
+  // bisagra en el borde izquierdo: el contenido (g) cuelga de ella y la tapa gira al cambiar su ángulo
+  const hinge = new THREE.Group(); hinge.position.set(-COVER_W / 2, 0, COVER_Z);
+  g.position.set(COVER_W / 2, 0, -COVER_Z);
+  hinge.add(g); g.userData.hinge = hinge;
+  panelGrp.add(hinge);
   return g;
 }
 
 /* ---------- cubierta de pilotos (arriba) ---------- */
-export const pilotCover = makeCover(1.72, 1.935, 'Cubierta de pilotos · clic para retirarla (con la puerta frontal abierta)');
+export const pilotCover = makeCover(1.72, 1.935, 'Cubierta de pilotos · clic para abrirla o cerrarla (con la puerta frontal abierta)');
 const lampGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.014, 20).rotateX(Math.PI / 2);
 
 /* 7 pilotos de encendido/apagado: 3 rojos arriba (general, salida, bypass de rodeo) y 4 verdes abajo (entradas y salidas de las UPS) */
@@ -67,7 +72,7 @@ warn.position.set(0.232, 1.84, FACE_Z + 0.0005); pilotCover.add(warn);
 const slots = RAIL_ITEMS.map(({ id }) => (id === SELECTOR.id
   ? { x: breakerPos[id].x, y: breakerPos[id].r, hw: 0.0175, hh: 0.028 }   // ranura algo más ancha: sirve a la manija del conmutador y a la palanca del CB7
   : { x: breakerPos[id].x, y: breakerPos[id].r, hw: 0.014, hh: 0.028 }));
-export const breakerCover = makeCover(1.545, 1.715, 'Cubierta de automáticos · clic para retirarla (con la puerta frontal abierta)', slots);
+export const breakerCover = makeCover(1.545, 1.715, 'Cubierta de automáticos · clic para abrirla o cerrarla (con la puerta frontal abierta)', slots);
 const plateOpts = { w: 260, h: 140, size: 36, color: '#ffffff', bg: '#101113' };
 let selPlate = null, cb7Plate = null, selNumbers = null;     // elementos propios de cada configuración del último lugar
 for (const { id, label } of RAIL_ITEMS) {
@@ -107,11 +112,10 @@ export function applyBypassMode(conm) {
 }
 
 export const covers = [pilotCover, breakerCover];
-export const isCoverRemoved = c => c.userData.removed;
+export const isCoverOpen = c => c.userData.open;
 
-/** Retira (true) o coloca (false) una cubierta con una animación. */
-export function moveCover(c, value) {
-  c.userData.removed = value;
-  if (!value) c.visible = true;
-  tween(c.position, 'z', value ? SLIDE : 0, 0.9).then(() => { if (c.userData.removed) c.visible = false; });
+/** Abre (true) o cierra (false) una cubierta girándola sobre su bisagra. */
+export function moveCover(c, open) {
+  c.userData.open = open;
+  tween(c.userData.hinge.rotation, 'y', open ? OPEN_ANGLE : 0, 0.9);
 }

@@ -8,7 +8,17 @@
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="bloqueado">
+<div id="acceso">
+  <form id="accesoForm" autocomplete="off">
+    <img src="assets/logo-fernandez-fica.png" alt="Fernández Fica">
+    <h1>UPS Modular 3D - Paralelo redundante</h1>
+    <p>Ingrese la clave de acceso</p>
+    <input type="password" id="accesoClave" placeholder="Clave" autocomplete="current-password" required>
+    <button class="primary" type="submit">Ingresar</button>
+    <div id="accesoMsg" role="alert"></div>
+  </form>
+</div>
 <div id="app">
   <div id="left">
     <div id="view">
@@ -216,7 +226,7 @@
     (document.getElementById('view') || document.body).appendChild(d);
   }
   function recuperar() {
-    if (window.__appStarted) return;
+    if (window.__appStarted || !window.__authOk) return;
     var ya = false; try { ya = sessionStorage.getItem('ups3d-reintento'); } catch (e) {}
     if (ya) return mostrar();
     try { sessionStorage.setItem('ups3d-reintento', '1'); } catch (e) {}
@@ -225,7 +235,7 @@
   }
   addEventListener('error', function (e) { motivo = (e && e.message) || motivo; setTimeout(recuperar, 300); });
   addEventListener('unhandledrejection', function (e) { motivo = (e && e.reason && e.reason.message) || motivo; setTimeout(recuperar, 300); });
-  setTimeout(mostrar, 8000);
+  window.__vigilar = function () { setTimeout(mostrar, 8000); };   // lo llama acceso.js al ingresar la clave
 })();
 </script>
 <script type="importmap">
@@ -234,6 +244,6 @@
   "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 }}
 </script>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/acceso.js"></script>
 </body>
 </html>

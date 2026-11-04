@@ -112,3 +112,16 @@ header p{margin:2px 0 0}
 .modesel span{color:var(--muted);font-size:12px}
 #fallo{position:absolute;left:16px;right:16px;bottom:16px;z-index:6;background:#5a0a12;border:1px solid #ff8a8a;border-radius:10px;padding:10px 14px;font-size:13px}
 #fallo small{color:#ffd0d0}
+body.bloqueado{overflow:hidden}
+body.bloqueado #app{display:none}
+#acceso{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+#accesoForm{width:min(360px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 26px;display:grid;gap:14px;text-align:center}
+#accesoForm img{width:70%;justify-self:center;background:#fff;border-radius:10px;padding:10px 14px}
+#accesoForm h1{font-size:17px;margin:4px 0 0}
+#accesoForm p{margin:0;color:var(--muted);font-size:13px}
+#accesoForm input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;text-align:center;letter-spacing:.12em}
+#accesoForm input:focus{outline:2px solid var(--accent);border-color:transparent}
+#accesoForm button{padding:11px;font-weight:700}
+#accesoMsg{min-height:18px;color:var(--bad);font-size:13px}
+#accesoForm.error{animation:sacudir .4s}
+@keyframes sacudir{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}

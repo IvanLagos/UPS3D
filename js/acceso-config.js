@@ -3,4 +3,4 @@
    Para cambiarla: python herramientas/generar-clave.py "NuevaClave" y pegar el resultado aquí. */
 export const SAL = 'ups3d-fica';
 export const ITER = 200000;
-export const CLAVE_HASH = 'be1623eb06b383fa05f906cf8518b1c882cc4cbe7e2bb24135e9cac97d270037';
+export const CLAVE_HASH = '863b1e55848237b9c8b6043f78c017afdf8e143519c59123a3ea6b1ba130ed52';

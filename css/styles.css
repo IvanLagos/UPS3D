@@ -150,3 +150,9 @@ a.cliente-op{text-decoration:none}
 .cliente-tag .enlace-tablero{margin-left:auto;font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none}
 .cliente-tag .enlace-tablero:hover{border-color:var(--accent)}
 .cliente-tag .enlace-tablero+button{margin-left:0}
+
+.cliente-tag .enlace-tablero+button+button{margin-left:0}
+.cerrar-sesion{font:inherit;cursor:pointer;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:6px}
+.cerrar-sesion:hover{color:var(--text);border-color:var(--bad)}
+.cliente-tag .cerrar-sesion{font-size:11px;padding:3px 8px;margin-left:0}
+.salir-eleccion{justify-self:center;font-size:12px;padding:6px 14px;margin-top:2px}

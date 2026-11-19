@@ -27,3 +27,8 @@ export async function sesionValida() {
 export function recordar(txt) {
   try { sessionStorage.setItem(SESION, txt); } catch (err) { /* sin sessionStorage: pedirá la clave al recargar */ }
 }
+
+/** Olvida la clave de esta pestaña: la próxima carga volverá a pedirla. */
+export function cerrarSesion() {
+  try { sessionStorage.removeItem(SESION); } catch (err) { /* nada */ }
+}

@@ -6,7 +6,7 @@
 <title>Fernández Fica · UPS Modular 3D</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="stylesheet" href="css/styles.css?v=7cd84a6c">
+<link rel="stylesheet" href="css/styles.css?v=71b17f69">
 </head>
 <body class="bloqueado">
 <div id="acceso">
@@ -23,6 +23,7 @@
     <h1>Seleccione el cliente</h1>
     <p>¿Para qué cliente desea trabajar?</p>
     <div id="clientesLista"></div>
+    <button type="button" class="cerrar-sesion salir-eleccion">Cerrar sesión</button>
   </div>
 </div>
 <div id="app">
@@ -144,7 +145,7 @@
 
   <aside id="panel">
     <header>
-      <div class="cliente-tag">Cliente: <strong id="clienteNombre"></strong> <a href="tablero.html" class="enlace-tablero">Tablero eléctrico</a> <button type="button" id="btnCambiarCliente">Cambiar cliente</button></div>
+      <div class="cliente-tag">Cliente: <strong id="clienteNombre"></strong> <a href="tablero.html" class="enlace-tablero">Tablero eléctrico</a> <button type="button" id="btnCambiarCliente">Cambiar cliente</button> <button type="button" class="cerrar-sesion">Cerrar sesión</button></div>
       <h1>UPS Modular 3D - Paralelo redundante</h1>
       <p>Modelo provisional · 2 UPS de 10 kVA en paralelo redundante (N+1) · 220–240 VAC</p>
     </header>
@@ -261,7 +262,7 @@
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
   "./js/acceso-config.js": "./js/acceso-config.js?v=5c2287fb",
-  "./js/acceso.js": "./js/acceso.js?v=89ffdc0c",
+  "./js/acceso.js": "./js/acceso.js?v=c3e699f6",
   "./js/clientes.js": "./js/clientes.js?v=816a4454",
   "./js/config.js": "./js/config.js?v=f3815b07",
   "./js/core/bus.js": "./js/core/bus.js?v=e4b15e60",
@@ -271,7 +272,7 @@
   "./js/core/materials.js": "./js/core/materials.js?v=c0173608",
   "./js/core/scene.js": "./js/core/scene.js?v=ae28e3d9",
   "./js/core/tween.js": "./js/core/tween.js?v=97aeed8d",
-  "./js/guardia-tablero.js": "./js/guardia-tablero.js?v=3f3172f7",
+  "./js/guardia-tablero.js": "./js/guardia-tablero.js?v=39b6f10e",
   "./js/logic/actions.js": "./js/logic/actions.js?v=0f21f3d4",
   "./js/logic/electrical.js": "./js/logic/electrical.js?v=a67d1f3e",
   "./js/logic/refresh.js": "./js/logic/refresh.js?v=fd0bede7",
@@ -291,10 +292,10 @@
   "./js/ui/sync.js": "./js/ui/sync.js?v=53143625",
   "./js/ui/visuals.js": "./js/ui/visuals.js?v=73a97667",
   "./js/ui/zoom.js": "./js/ui/zoom.js?v=330b4b9b",
-  "./js/verificar.js": "./js/verificar.js?v=1224a87c",
+  "./js/verificar.js": "./js/verificar.js?v=61023832",
   "./tablero/modelos.js": "./tablero/modelos.js?v=cb0737d7"
 }}
 </script>
-<script type="module" src="js/acceso.js?v=89ffdc0c"></script>
+<script type="module" src="js/acceso.js?v=c3e699f6"></script>
 </body>
 </html>

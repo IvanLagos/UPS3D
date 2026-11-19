@@ -63,3 +63,6 @@ pre{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius
 
 .volver{display:inline-block;margin-bottom:6px;font-size:12px;color:var(--muted);text-decoration:none}
 .volver:hover{color:var(--accent)}
+
+button.cerrar-sesion{margin-left:10px;padding:2px 8px;cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--muted)}
+button.cerrar-sesion:hover{color:var(--text);border-color:#e05a5a}

@@ -1,10 +1,18 @@
 /* Clave de acceso: la simulación solo se carga después de ingresar la clave correcta.
    La clave se compara por su huella (ver verificar.js y acceso-config.js); el campo siempre oculta lo que se escribe.
    Es una barrera de cortesía del lado del navegador: no reemplaza una protección real del servidor. */
-import { claveValida, sesionValida, recordar } from './verificar.js';
+import { claveValida, sesionValida, recordar, cerrarSesion } from './verificar.js';
 import { CLIENTES, rutaDe, clienteDeRuta } from './clientes.js';
 
 const $ = s => document.querySelector(s);
+
+/** Cerrar sesión: olvida la clave y vuelve a la pantalla de acceso. */
+function salir() {
+  cerrarSesion();
+  history.replaceState(null, '', location.pathname + location.search);          // sin cliente en la ruta
+  location.reload();
+}
+document.querySelectorAll('.cerrar-sesion').forEach(b => b.addEventListener('click', salir));
 /** Entra al cliente que indica la ruta del enlace, o muestra la elección de cliente. */
 function entrar() {
   const c = clienteDeRuta();

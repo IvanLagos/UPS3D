@@ -60,3 +60,6 @@ pre{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius
 #estado.ok{border-color:var(--accent);color:#baf7d3}
 #estado.mal{border-color:var(--bad);color:#ffc4c4}
 #estado:empty{display:none}
+
+.volver{display:inline-block;margin-bottom:6px;font-size:12px;color:var(--muted);text-decoration:none}
+.volver:hover{color:var(--accent)}

@@ -25,6 +25,10 @@ function elegirCliente() {
     b.addEventListener('click', () => abrir(c));
     lista.appendChild(b);
   }
+  const t = document.createElement('a');                                  // herramienta aparte, disponible desde la plataforma de clientes
+  t.href = 'tablero.html'; t.className = 'cliente-op herramienta';
+  t.innerHTML = '<strong>TABLERO ELÉCTRICO</strong><small>Editor para diseñar circuitos de tableros</small>';
+  lista.appendChild(t);
 }
 
 async function abrir(cliente) {

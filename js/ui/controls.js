@@ -8,7 +8,7 @@ import { ALL_CB } from '../config.js';
 import { doorF, doorR } from '../model/doors.js';
 import {
   setDoor, setSides, setCover, setBypass, setTransfer, setFault, setBanks, setBankFault,
-  toggleBreaker, setBreakerManual, setSelector, setBypassMode,
+  toggleBreaker, setBreakerManual, setSelector, setBypassMode, setAuxRodeo,
 } from '../logic/actions.js';
 import { montar, desmontar } from '../logic/sequences.js';
 import { syncSwitches } from './sync.js';
@@ -33,6 +33,10 @@ function buildBreakerRows() {
     rows.appendChild(l);
     l.querySelector('input').addEventListener('change', e => { setBreakerManual(id, e.target.checked); syncSwitches(); });
   }
+  const a = document.createElement('label'); a.className = 'sw'; a.id = 'rowAuxRodeo';
+  a.innerHTML = '<span>Contacto auxiliar adelantado del CB7<small>Avisa a la UPS 1 (y esta a la UPS 2) para pasar a bypass antes de cerrar el rodeo</small></span><input type="checkbox" id="swAuxRodeo">';
+  $('#rowCB7').after(a);
+  a.querySelector('input').addEventListener('change', e => setAuxRodeo(e.target.checked));
 }
 
 /** Expande una zona (simulación 3D o unifilar) a pantalla completa y la vuelve a su lugar; solo una a la vez. */

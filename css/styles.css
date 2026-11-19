@@ -115,13 +115,32 @@ header p{margin:2px 0 0}
 body.bloqueado{overflow:hidden}
 body.bloqueado #app{display:none}
 #acceso{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:var(--bg)}
-#accesoForm{width:min(360px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 26px;display:grid;gap:14px;text-align:center}
-#accesoForm img{width:70%;justify-self:center;background:#fff;border-radius:10px;padding:10px 14px}
-#accesoForm h1{font-size:17px;margin:4px 0 0}
-#accesoForm p{margin:0;color:var(--muted);font-size:13px}
+#accesoForm,#clientesBox{width:min(360px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 26px;display:grid;gap:14px;text-align:center}
+#accesoForm img,#clientesBox img{width:70%;justify-self:center;background:#fff;border-radius:10px;padding:10px 14px}
+#clientesBox h1,#accesoForm h1{font-size:17px;margin:4px 0 0}
+#clientesBox p,#accesoForm p{margin:0;color:var(--muted);font-size:13px}
 #accesoForm input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;text-align:center;letter-spacing:.12em}
 #accesoForm input:focus{outline:2px solid var(--accent);border-color:transparent}
 #accesoForm button{padding:11px;font-weight:700}
 #accesoMsg{min-height:18px;color:var(--bad);font-size:13px}
 #accesoForm.error{animation:sacudir .4s}
 @keyframes sacudir{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* barra de zoom a la izquierda del 3D */
+#zoomBar{position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px;background:#0009;border:1px solid var(--line);border-radius:999px}
+#zoomBar button{width:28px;height:28px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:#1b232c;color:var(--text);border:1px solid var(--line);cursor:pointer}
+#zoomBar button:hover{border-color:var(--accent)}
+#zoomRango{-webkit-appearance:slider-vertical;appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:22px;height:clamp(90px,24vh,180px);margin:0;accent-color:var(--accent);cursor:pointer}
+
+#r_aux.on .l{fill:var(--accent);font-weight:700}
+
+#clientesBox{display:grid}
+#clientesBox[hidden],#accesoForm[hidden]{display:none}
+#clientesLista{display:grid;gap:10px}
+.cliente-op{display:grid;gap:3px;text-align:left;padding:14px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit;cursor:pointer}
+.cliente-op:hover,.cliente-op:focus-visible{border-color:var(--accent);outline:none}
+.cliente-op strong{font-size:16px;letter-spacing:.06em}
+.cliente-op small{color:var(--muted);font-size:12px}
+.cliente-tag{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:6px}
+.cliente-tag strong{color:var(--accent);letter-spacing:.06em}
+.cliente-tag button{margin-left:auto;font-size:11px;padding:3px 8px}

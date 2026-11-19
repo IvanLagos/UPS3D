@@ -10,10 +10,10 @@ import { rack, makeFan } from './rack.js';
 export const OPEN_ANGLE = -Math.PI * 0.62;
 
 function addLouver(parent, cx, cy, w, h, n, dz) {
-  const gap = h / n;
+  const gap = w / n;                                              // lamas verticales, repartidas a lo ancho
   for (let i = 0; i < n; i++) {
-    const s = box(w, gap * 0.45, 0.01, M.steel, cx, cy - h / 2 + gap * (i + 0.5), 0.035 * dz, parent);
-    s.rotation.x = -0.45 * dz;
+    const s = box(gap * 0.8, h, 0.01, M.steel, cx - w / 2 + gap * (i + 0.5), cy, 0.035 * dz, parent);
+    s.rotation.y = 0.8 * dz;
   }
 }
 

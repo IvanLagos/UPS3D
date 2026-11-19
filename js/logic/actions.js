@@ -82,11 +82,57 @@ function maniobraSalida(id, closing) {
 
 /** Cierra o abre un automático desde el panel lateral o el diagrama (con avisos de riesgo). */
 export function toggleBreaker(id) {
+  if (id === 'CB7' && S.auxRodeo) { setRodeo(!S.CB.CB7); return; }          // con contacto auxiliar adelantado la maniobra tiene su propia secuencia
   setBreakerManual(id, !S.CB[id]);
   toast(`${id} (${breakerName(id)}): ${S.CB[id] ? 'CERRADO' : 'ABIERTO'}`);
   syncSwitches();
 }
+
+/* ---------- contacto auxiliar adelantado del bypass de rodeo (CB7) ----------
+   Va montado junto al CB7 y cierra unas milésimas ANTES que él (y abre unas milésimas DESPUÉS). Su señal llega a la UPS 1 y, por el cable
+   de comunicación, la UPS 1 se la pasa a la UPS 2: las dos pasan a bypass estático y quedan sincronizadas con la red justo antes de que el
+   CB7 las una a la red. Así no hay diferencia de potencia en la salida (sin el contacto, cerrar el CB7 con las UPS en inversor las daña).
+   En el modelo el adelanto se alarga a una fracción de segundo para poder verlo. */
+const ADELANTO_MS = 450;
+let rodeoT = null, interno = false;
+function cb7Directo(c) { interno = true; try { setBreakerManual('CB7', c); } finally { interno = false; } }
+export function setRodeo(closed) {
+  if (rodeoT) return;                                                       // mientras corre el adelanto no admite otra orden
+  if (!S.auxRodeo || S.bypassMode !== 'rodeo') { cb7Directo(closed); toast(`CB7 (${breakerName('CB7')}): ${closed ? 'CERRADO' : 'ABIERTO'}`); syncSwitches(); return; }
+  if (closed === S.CB.CB7) return;
+  S.rodeoCmd = closed;
+  if (closed) {
+    S.auxSenal = true;
+    if (E.units && E.units.some(x => x.present)) {
+      if (!S.byp.some(Boolean)) S.auxForzo = true;
+      applyBypass(true);
+    }
+    toast('Contacto auxiliar del CB7: cierra antes que el rodeo. La UPS 1 recibe la señal y, por el cable de comunicación, avisa a la UPS 2: ambas pasan a bypass estático');
+    rodeoT = setTimeout(() => {
+      rodeoT = null; cb7Directo(true);
+      toast('CB7 cerrado con las UPS ya en bypass estático: red y salida sincronizadas, sin diferencia de potencia');
+      syncSwitches();
+    }, ADELANTO_MS);
+  } else {
+    cb7Directo(false);
+    toast('CB7 abierto. El contacto auxiliar abre unas milésimas después y las UPS vuelven a inversor');
+    rodeoT = setTimeout(() => {
+      rodeoT = null; S.auxSenal = false;
+      if (S.auxForzo) { S.auxForzo = false; applyBypass(false); }
+      syncSwitches();
+    }, ADELANTO_MS);
+  }
+  syncSwitches();
+}
+/** Instala o retira el contacto auxiliar adelantado del CB7. */
+export function setAuxRodeo(on) {
+  if (!on && (S.CB.CB7 || rodeoT)) { toast('Abra el CB7 antes de retirar el contacto auxiliar.'); syncSwitches(); return; }
+  S.auxRodeo = on; S.auxSenal = false; S.auxForzo = false;
+  toast(on ? 'Contacto auxiliar adelantado instalado: avisará a la UPS 1 antes de cerrar el CB7' : 'Contacto auxiliar retirado: cerrar el CB7 con las UPS en inversor las daña');
+  syncSwitches();
+}
 export function setBreakerManual(id, closed) {
+  if (id === 'CB7' && S.auxRodeo && S.bypassMode === 'rodeo' && !rodeoT && !interno && !closed !== !S.CB.CB7) { setRodeo(closed); return; }   // también desde el panel lateral
   maniobraSalida(id, closed);
   S.CB[id] = closed;
   if (closed) clearTrip(id);
@@ -131,7 +177,7 @@ export function setBypassMode(mode) {
   if (S.bypassMode === mode) return;
   clearTimeout(selTimer); selTimer = null;
   S.bypassMode = mode;
-  S.sel = 1; S.CB.CB7 = false; S.tripped = [false, false];          // cada configuración parte con la carga en las UPS
+  S.sel = 1; S.CB.CB7 = false; S.tripped = [false, false]; S.auxSenal = false; S.auxForzo = false;         // cada configuración parte con la carga en las UPS
   toast(mode === 'conmutador'
     ? 'Bypass de rodeo con conmutador 1-0-2: de ruptura antes de cierre, red e inversor nunca se unen'
     : 'Bypass de rodeo con interruptor CB7 (configuración anterior): puede cerrarse con las UPS en inversor');

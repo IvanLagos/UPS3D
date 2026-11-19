@@ -20,7 +20,8 @@ imports = {
     'three': 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
     'three/addons/': 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/',
 }
-for js in sorted((RAIZ / 'js').rglob('*.js')):
+# el modelo 3D de las piezas del editor de tableros (tablero/modelos.js) también lo usa el rack
+for js in sorted([*(RAIZ / 'js').rglob('*.js'), RAIZ / 'tablero' / 'modelos.js']):
     rel = js.relative_to(RAIZ).as_posix()
     imports[f'./{rel}'] = f'./{rel}?v={huella(js)}'
 

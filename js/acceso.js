@@ -1,15 +1,46 @@
 /* Clave de acceso: la simulación solo se carga después de ingresar la clave correcta.
-   La clave se compara por su huella SHA-256 (ver acceso-config.js); el campo siempre oculta lo que se escribe.
+   La clave se compara por su huella (ver verificar.js y acceso-config.js); el campo siempre oculta lo que se escribe.
    Es una barrera de cortesía del lado del navegador: no reemplaza una protección real del servidor. */
-import { SAL, CLAVE_HASH } from './acceso-config.js';
+import { claveValida, sesionValida, recordar } from './verificar.js';
+import { CLIENTES, rutaDe, clienteDeRuta } from './clientes.js';
 
 const $ = s => document.querySelector(s);
-const huella = async txt => {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(SAL + txt));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-};
+/** Entra al cliente que indica la ruta del enlace, o muestra la elección de cliente. */
+function entrar() {
+  const c = clienteDeRuta();
+  if (c) abrir(c); else elegirCliente();
+}
 
-async function abrir() {
+/** Pantalla para elegir el cliente, después de ingresar la clave. */
+function elegirCliente() {
+  $('#accesoForm').hidden = true;
+  const caja = $('#clientesBox'), lista = $('#clientesLista');
+  caja.hidden = false;
+  window.addEventListener('hashchange', () => { if (clienteDeRuta()) { location.reload(); } });   // «adelante» desde la elección entra al cliente de la ruta
+  lista.innerHTML = '';
+  for (const c of Object.values(CLIENTES)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cliente-op';
+    b.innerHTML = `<strong>${c.nombre}</strong><small>${c.detalle}</small>`;
+    b.addEventListener('click', () => abrir(c));
+    lista.appendChild(b);
+  }
+}
+
+async function abrir(cliente) {
+  window.__cliente = cliente;
+  if (location.hash !== rutaDe(cliente)) location.hash = rutaDe(cliente);          // el enlace cambia con el cliente
+  document.body.dataset.cliente = cliente.id;
+  document.title = `Fernández Fica · UPS Modular 3D · ${cliente.nombre}`;
+  $('#clienteNombre').textContent = cliente.nombre;
+  $('#btnCambiarCliente').addEventListener('click', () => {     // vuelve a la elección de cliente sin pedir la clave otra vez (solo esta recarga)
+    history.replaceState(null, '', location.pathname + location.search);          // sin cliente en la ruta
+    location.reload();
+  });
+  window.addEventListener('hashchange', () => {                                       // si cambia la ruta (atrás/adelante o a mano), se recarga con ese cliente o con la elección
+    const c = clienteDeRuta();
+    if (!c || c.id !== cliente.id) { location.reload(); }          // atrás (sin cliente en la ruta) vuelve a la elección de cliente
+  });
   document.body.classList.remove('bloqueado');
   $('#acceso')?.remove();
   window.__authOk = true;
@@ -24,9 +55,9 @@ function pedirClave() {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     msg.textContent = '';
-    if (await huella(clave.value) === CLAVE_HASH) {
-      try { sessionStorage.setItem('ups3d-acceso', CLAVE_HASH); } catch (err) { /* sin sessionStorage: pedirá la clave al recargar */ }
-      abrir();
+    if (await claveValida(clave.value)) {
+      recordar(clave.value);
+      entrar();                                // después de la clave, el cliente (el de la ruta del enlace, o se elige)
     } else {
       clave.value = '';
       form.classList.add('error');
@@ -37,6 +68,5 @@ function pedirClave() {
   });
 }
 
-let guardada = null;
-try { guardada = sessionStorage.getItem('ups3d-acceso'); } catch (err) { /* sin sessionStorage */ }
-if (guardada === CLAVE_HASH) abrir(); else pedirClave();
+/* La clave se pide solo la primera vez: queda recordada mientras la pestaña siga abierta (se pierde al cerrarla) y se vuelve a verificar en cada carga. */
+if (await sesionValida()) entrar(); else pedirClave();

@@ -8,7 +8,7 @@ import { S, E } from './state.js';
 import { fans } from './model/rack.js';
 import './model/doors.js';
 import './model/breakerPanel.js';
-import './model/boardWiring.js';
+import './model/circuito.js';
 import './model/boardCover.js';
 import './model/modules.js';
 import './model/load.js';
@@ -16,8 +16,10 @@ import './logic/actions.js';                // registra las acciones que invoca 
 import { simulate } from './logic/simulate.js';
 import { refresh } from './logic/refresh.js';
 import { applyLive } from './ui/visuals.js';
+import { updateCircuito } from './model/circuito.js';
 import { syncSwitches } from './ui/sync.js';
 import { initControls } from './ui/controls.js';
+import './ui/zoom.js';
 
 new ResizeObserver(resize).observe(view);
 resize();
@@ -39,6 +41,7 @@ renderer.setAnimationLoop(() => {
   stepTweens(dt);
   // si la lógica falla, el 3D no se congela: se registra el error una vez y se sigue dibujando
   try {
+    updateCircuito();                     // los cables de los pilotos siguen a la cubierta cuando se abre
     refresh();
     simulate(dt);
     acc += dt;

@@ -6,7 +6,7 @@
 <title>Fernández Fica · UPS Modular 3D</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="stylesheet" href="css/styles.css?v=0422c06f">
+<link rel="stylesheet" href="css/styles.css?v=3993ce27">
 </head>
 <body class="bloqueado">
 <div id="acceso">
@@ -18,6 +18,12 @@
     <button class="primary" type="submit">Ingresar</button>
     <div id="accesoMsg" role="alert"></div>
   </form>
+  <div id="clientesBox" hidden>
+    <img src="assets/logo-fernandez-fica.png" alt="Fernández Fica">
+    <h1>Seleccione el cliente</h1>
+    <p>¿Para qué cliente desea trabajar?</p>
+    <div id="clientesLista"></div>
+  </div>
 </div>
 <div id="app">
   <div id="left">
@@ -25,6 +31,11 @@
       <div id="paso"></div>
       <div id="toast"></div>
       <div id="tip"></div>
+      <div id="zoomBar" title="Zoom">
+        <button id="zoomMas" aria-label="Acercar" title="Acercar">+</button>
+        <input type="range" id="zoomRango" min="0" max="1000" step="1" value="0" aria-label="Zoom">
+        <button id="zoomMenos" aria-label="Alejar" title="Alejar">−</button>
+      </div>
       <button class="sm expandbtn" id="btnExpand3d" title="Expandir la simulación a pantalla completa (Esc para cerrar)">⤢ Expandir</button>
       <div id="hint">Arrastre para girar · rueda para acercar · clic en puertas, módulos y automáticos para operarlos</div>
     </div>
@@ -118,6 +129,7 @@
           <path id="r_r2" class="w" d="M335 184V284H230"/>
           <g class="brk" data-cb="CB7" transform="translate(335,175)"><rect x="-9" y="-9" width="18" height="18" rx="3"/><line x1="0" y1="-5" x2="0" y2="5"/></g>
           <text class="l" x="348" y="172">CB7 Bypass</text><text class="l" x="348" y="183">de rodeo</text>
+          <g id="r_aux"><text class="l" x="348" y="198">Aux. adelantado</text><text class="l" x="348" y="209">→ UPS 1 → UPS 2</text></g>
           <path id="r_ob" class="w" d="M80 284H230"/>
           <path id="r_os" class="w" d="M155 284V293"/>
           <path id="r_ol" class="w" d="M155 311V328"/>
@@ -132,6 +144,7 @@
 
   <aside id="panel">
     <header>
+      <div class="cliente-tag">Cliente: <strong id="clienteNombre"></strong> <button type="button" id="btnCambiarCliente">Cambiar cliente</button></div>
       <h1>UPS Modular 3D - Paralelo redundante</h1>
       <p>Modelo provisional · 2 UPS de 10 kVA en paralelo redundante (N+1) · 220–240 VAC</p>
     </header>
@@ -174,6 +187,11 @@
             <button class="sm cam" data-cam="top">Superior</button>
             <button class="sm" id="btnShot">Captura PNG</button>
           </div>
+          <div class="row" style="margin-top:8px">
+            <button class="sm" id="btnOrdenarCables" title="Reparte los cables del tablero para que no se toquen">Ordenar cables del tablero</button>
+            <button class="sm" id="btnRestCables" title="Vuelve los cables a su recorrido original">Deshacer orden manual</button>
+          </div>
+          <p class="note" style="margin:6px 0 0">Con las cubiertas abiertas, tome un cable de la sección que quiera y arrástrelo para ordenarlo a mano.</p>
         </section>
       </div>
 
@@ -242,35 +260,41 @@
 {"imports":{
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-  "./js/acceso-config.js": "./js/acceso-config.js?v=371225e5",
-  "./js/acceso.js": "./js/acceso.js?v=6b6e1acf",
+  "./js/acceso-config.js": "./js/acceso-config.js?v=ff93cc8f",
+  "./js/acceso.js": "./js/acceso.js?v=ef2e6844",
+  "./js/clientes.js": "./js/clientes.js?v=816a4454",
   "./js/config.js": "./js/config.js?v=f3815b07",
   "./js/core/bus.js": "./js/core/bus.js?v=e4b15e60",
   "./js/core/dom.js": "./js/core/dom.js?v=56a74989",
   "./js/core/helpers.js": "./js/core/helpers.js?v=e28d8958",
   "./js/core/interaction.js": "./js/core/interaction.js?v=7c8caeb3",
   "./js/core/materials.js": "./js/core/materials.js?v=c0173608",
-  "./js/core/scene.js": "./js/core/scene.js?v=5efe50c5",
+  "./js/core/scene.js": "./js/core/scene.js?v=ae28e3d9",
   "./js/core/tween.js": "./js/core/tween.js?v=97aeed8d",
-  "./js/logic/actions.js": "./js/logic/actions.js?v=3b19ab9a",
+  "./js/guardia-tablero.js": "./js/guardia-tablero.js?v=3f3172f7",
+  "./js/logic/actions.js": "./js/logic/actions.js?v=0f21f3d4",
   "./js/logic/electrical.js": "./js/logic/electrical.js?v=a67d1f3e",
-  "./js/logic/refresh.js": "./js/logic/refresh.js?v=0035810f",
+  "./js/logic/refresh.js": "./js/logic/refresh.js?v=fd0bede7",
   "./js/logic/sequences.js": "./js/logic/sequences.js?v=1e29fc08",
   "./js/logic/simulate.js": "./js/logic/simulate.js?v=5ab01da8",
-  "./js/main.js": "./js/main.js?v=bd79a43c",
-  "./js/model/boardCover.js": "./js/model/boardCover.js?v=b44cd21b",
-  "./js/model/boardWiring.js": "./js/model/boardWiring.js?v=ff6a142c",
-  "./js/model/breakerPanel.js": "./js/model/breakerPanel.js?v=12181a5d",
-  "./js/model/doors.js": "./js/model/doors.js?v=63b9d3cf",
+  "./js/main.js": "./js/main.js?v=5036ac54",
+  "./js/model/boardCover.js": "./js/model/boardCover.js?v=0d53bf4d",
+  "./js/model/breakerPanel.js": "./js/model/breakerPanel.js?v=3b2203b4",
+  "./js/model/cablesOrden.js": "./js/model/cablesOrden.js?v=7e4abb02",
+  "./js/model/circuito.js": "./js/model/circuito.js?v=58e0a14b",
+  "./js/model/doors.js": "./js/model/doors.js?v=17e54ed7",
   "./js/model/load.js": "./js/model/load.js?v=56365104",
   "./js/model/modules.js": "./js/model/modules.js?v=9c913a8e",
   "./js/model/rack.js": "./js/model/rack.js?v=12f156cb",
-  "./js/state.js": "./js/state.js?v=85a76fd0",
-  "./js/ui/controls.js": "./js/ui/controls.js?v=244c4ae3",
-  "./js/ui/sync.js": "./js/ui/sync.js?v=438893a7",
-  "./js/ui/visuals.js": "./js/ui/visuals.js?v=773f3891"
+  "./js/state.js": "./js/state.js?v=f6e7a9a3",
+  "./js/ui/controls.js": "./js/ui/controls.js?v=1554049b",
+  "./js/ui/sync.js": "./js/ui/sync.js?v=53143625",
+  "./js/ui/visuals.js": "./js/ui/visuals.js?v=73a97667",
+  "./js/ui/zoom.js": "./js/ui/zoom.js?v=330b4b9b",
+  "./js/verificar.js": "./js/verificar.js?v=1224a87c",
+  "./tablero/modelos.js": "./tablero/modelos.js?v=cb0737d7"
 }}
 </script>
-<script type="module" src="js/acceso.js?v=6b6e1acf"></script>
+<script type="module" src="js/acceso.js?v=ef2e6844"></script>
 </body>
 </html>

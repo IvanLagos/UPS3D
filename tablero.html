@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero eléctrico · Diseño de circuitos</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="tablero/tablero.css">
+<style id="oculto">body{visibility:hidden}</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <div id="paso"></div>
+    <div id="toast"></div>
+    <div id="tip"></div>
+    <div id="estado"></div>
+    <div id="ajuste" hidden></div>
+    <button class="sm" id="btnFit" title="Centrar la vista en el tablero">⤢ Encuadrar</button>
+    <div id="hint">Arrastre para girar · botón derecho para mover · rueda para acercar · clic en un borne y luego en otro para unirlos con un cable · Ctrl+clic en una pieza para ajustarla · Ctrl+arrastrar para moverla · arrastre un cable desde cualquier sección para moverlo · Alt+arrastrar: en profundidad</div>
+  </div>
+  <aside id="panel">
+    <header>
+      <h1>Tablero eléctrico · diseño de circuitos</h1>
+      <p>Arme el tablero con los componentes que necesite y conéctelos; después se traslada al rack.</p>
+    </header>
+
+    <section>
+      <h2>Tablero</h2>
+      <div class="row">
+        <label>Ancho <select id="selW"></select></label>
+        <span class="note" id="infoBoard"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Agregar componentes</h2>
+      <div id="addTipos" class="seg"></div>
+      <div id="addCampos" class="campos"></div>
+      <button class="primary" id="btnAdd">Agregar</button>
+    </section>
+
+    <section>
+      <h2>Componentes <span id="nComps" class="muted"></span></h2>
+      <ul id="listComps" class="lista"></ul>
+    </section>
+
+    <section>
+      <h2>Cableado</h2>
+      <p class="note">Elija color y sección, haga clic en un borne de origen y luego en el de destino. Clic en un cable lo selecciona (Supr lo borra).</p>
+      <div id="wireColors" class="swatches"></div>
+      <div class="row"><label>Sección <select id="selMm"></select></label></div>
+      <div class="row" style="margin:8px 0">
+        <label>Trazado <select id="selModo"><option value="peinado">Peinado (por canales)</option><option value="libre">Libre</option></select></label>
+        <label><input type="checkbox" id="chkAmarras"> Amarras</label>
+        <label>Cada <select id="selSep"></select></label>
+      </div>
+      <ul id="listWires" class="lista"></ul>
+      <div id="rutaEd" class="rutaEd" hidden></div>
+      <button class="sm" id="btnClearWires">Borrar todo el cableado</button>
+    </section>
+
+    <section>
+      <h2>Lista de materiales</h2>
+      <pre id="bom"></pre>
+    </section>
+
+    <section>
+      <h2>Proyecto</h2>
+      <div class="row">
+        <button class="sm" id="btnExample">Cargar tablero UPS</button>
+        <button class="sm" id="btnEmpty">Vaciar tablero</button>
+        <button class="sm" id="btnExport">Exportar JSON</button>
+        <button class="sm" id="btnImport">Importar JSON</button>
+        <input type="file" id="fileImport" accept="application/json,.json" hidden>
+      </div>
+      <p class="note">El trabajo se guarda solo en este navegador.</p>
+    </section>
+  </aside>
+</div>
+<script type="importmap">
+{"imports":{
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module" src="js/guardia-tablero.js"></script>
+</body>
+</html>

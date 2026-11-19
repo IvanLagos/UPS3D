@@ -102,8 +102,8 @@ Las acciones modifican `S`; `simulate(dt)` hace evolucionar `S` con el tiempo; `
 
 ## Clave de acceso
 
-La página pide una clave antes de cargar la simulación (el campo siempre oculta lo que se escribe). Clave por defecto: **`Fernandez@030`**.
-Una vez ingresada, no se vuelve a pedir mientras la pestaña siga abierta.
+La página pide una clave antes de cargar la simulación (el campo siempre oculta lo que se escribe). La clave no está escrita en ningún archivo del proyecto.
+Una vez ingresada, no se vuelve a pedir mientras la pestaña siga abierta. El editor de tableros (`tablero.html`) pide la misma clave.
 
 Para cambiarla:
 
@@ -111,7 +111,7 @@ Para cambiarla:
 python herramientas/generar-clave.py "NuevaClave"
 ```
 
-Pegue la línea que imprime en `js/acceso-config.js` (reemplazando `CLAVE_HASH`). En el código solo queda la huella SHA-256 de la clave, no el texto.
+Pegue la línea que imprime en `js/acceso-config.js` (reemplazando `CLAVE_HASH`). En el código solo queda la huella de la clave (PBKDF2-SHA256), no el texto.
 
 > Es una barrera del lado del navegador, pensada para cuidar la presentación frente a terceros: todo el código sigue siendo público en GitHub y alguien con conocimientos podría saltársela. Para una protección real hay que usar un repositorio privado o un servidor con autenticación.
 

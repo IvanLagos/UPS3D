@@ -5,8 +5,8 @@ import { tween } from '../core/tween.js';
 import { S, E } from '../state.js';
 import { RAIL_ITEMS, CB_IN, CB_OUT, MODE_TXT, BANK_KWH } from '../config.js';
 import { powerMods, battMods } from '../model/modules.js';
-import { breakers } from '../model/breakerPanel.js';
-import { bars, wires, setLive } from '../model/boardWiring.js';
+import { breakers, LEVER_ANGLE } from '../model/breakerPanel.js';
+import { applyCircuito } from '../model/circuito.js';
 import { bulbMat, cableMat, lossMark } from '../model/load.js';
 import { paintUpsButtons } from './sync.js';
 
@@ -39,20 +39,15 @@ export function applyVisuals() {
   for (const { id, pilot } of RAIL_ITEMS) {
     const b = breakers[id];
     if (b.lever) {
-      const closed = S.CB[id];
-      tween(b.lever.position, 'y', b.y + (closed ? 0.011 : -0.011), 0.25);
-      b.leverMat.color.setHex(closed ? 0x2fd27a : 0x888f99);
-      b.leverMat.emissive.setHex(closed ? 0x0c4a2a : 0x000000);
+      tween(b.lever.rotation, 'x', S.CB[id] ? -LEVER_ANGLE : LEVER_ANGLE, 0.25);     // arriba = cerrado
     }
-    const red = pilot.color === 'red';                       // piloto de encendido: enciende donde hay tensión
-    setLed(b.lampMat, lamp[id] ? (red ? 0xff1010 : 0x00ff55) : 0, red ? 0x560c0c : 0x0a5222);
+    b.pilot.userData.setLit(!!lamp[id]);                     // piloto del editor: encendido = color puro con halo; apagado = oscuro
   }
   tween(breakers.SEL.handle.rotation, 'z', SEL_ANGLE[S.sel], 0.45);   // el conmutador gira a su posición
   {                                                                    // palanca del CB7 (configuración anterior)
-    const b = breakers.CB7, closed = S.CB.CB7;
-    tween(b.lever.position, 'y', b.y + (closed ? 0.011 : -0.011), 0.25);
-    b.leverMat.color.setHex(closed ? 0x2fd27a : 0x888f99);
-    b.leverMat.emissive.setHex(closed ? 0x0c4a2a : 0x000000);
+    const cmd = S.auxSenal ? S.rodeoCmd : S.CB.CB7;                     // las dos palancas, azul y verde, se mueven en paralelo desde que se da la orden
+    tween(breakers.CB7.lever.rotation, 'x', cmd ? -LEVER_ANGLE : LEVER_ANGLE, 0.25);
+    tween(breakers.AUX.lever.rotation, 'x', cmd ? -LEVER_ANGLE : LEVER_ANGLE, 0.25);     // palanca verde del contacto auxiliar
   }
 
   applyBoardWiring();
@@ -64,24 +59,13 @@ export function applyVisuals() {
   lossMark.visible = !out;                              // sin energía: X roja sobre la carga
   cableMat.emissive.setHex(out ? 0x1fa85f : 0x000000);
 
+  $('#r_aux').classList.toggle('on', S.auxSenal); $('#r_aux').style.display = S.auxRodeo ? '' : 'none';     // contacto auxiliar en el diagrama
   applyUnifilar();
   applyAlarms();
 }
 
-/** Barras y cables del tablero: amarillo = red/bypass, verde = salida de UPS en inversor o baterías. */
-function applyBoardWiring() {
-  const { units, gen } = E;
-  const YEL = 0xf0b429, GRN = 0x22ff88;
-  const delInv = E.del.some(x => x.mode === 'normal' || x.mode === 'bateria');
-  const outHex = delInv ? GRN : YEL;                                   // en bypass o por el rodeo la salida va con la red (amarillo)
-  const busOut = E.del.length > 0 || E.rodeo;
-  setLive(bars.RED, S.mains, YEL, 0.7);
-  setLive(bars.ENT, gen, YEL, 0.7);
-  setLive(bars.SAL, busOut, outHex, 0.7);
-  setLive(wires.CB5, S.mains, YEL); setLive(wires.CB1, gen, YEL); setLive(wires.CB3, gen, YEL); setLive(wires.SEL, gen, YEL);
-  [0, 1].forEach(u => setLive(wires[['CB2', 'CB4'][u]], units[u].deliver, units[u].mode === 'bypass' ? YEL : GRN));
-  setLive(wires.CB6, busOut, outHex);
-}
+/** Barras y cables del tablero: amarillo = red/bypass, verde = salida de UPS en inversor o baterías (ver model/circuito.js). */
+const applyBoardWiring = applyCircuito;
 
 /** Diagrama unifilar: la red en amarillo, lo posterior al rectificador/inversor en verde. */
 function applyUnifilar() {
@@ -145,6 +129,7 @@ function applyUnifilar() {
 function applyAlarms() {
   const { units, out, src, gen } = E;
   const al = [];
+  if (S.auxSenal) al.push(['Contacto auxiliar del CB7 activo: señal a la UPS 1 → UPS 2; las UPS pasan a bypass antes de cerrar el rodeo', '']);
   if (E.rodeo) al.push([E.conm ? 'Conmutador bypass en 2: la red alimenta la carga directo, por fuera de las UPS' : 'Bypass de rodeo cerrado (CB7): la red alimenta el bus de salida por fuera de las UPS', '']);
   if (E.conm && S.sel === 0) al.push(['Conmutador bypass en 0: carga desconectada (ni red ni UPS)', 'bad']);
   if (!S.mains) al.push(['Falla de red eléctrica', 'bad']);

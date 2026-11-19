@@ -52,7 +52,9 @@ export function syncSwitches() {
   $('#uniRodeo').style.display = conm ? 'none' : '';
   $('#uni').setAttribute('viewBox', conm ? '0 0 395 410' : '0 0 395 360');
   $('#rowCB7').style.display = conm ? 'none' : '';
+  $('#rowAuxRodeo').style.display = conm ? 'none' : '';
+  $('#swAuxRodeo').checked = S.auxRodeo;
   document.querySelector('.selrow').style.display = conm ? '' : 'none';
-  applyBypassMode(conm);
+  applyBypassMode(conm, S.auxRodeo);
   document.querySelectorAll('[data-sel]').forEach(el => el.classList.toggle('on', +el.dataset.sel === S.sel));   // conmutador bypass: panel y unifilar
 }

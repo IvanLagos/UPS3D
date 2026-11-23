@@ -1,7 +1,5 @@
-/* Clave de acceso: la simulación solo se carga después de ingresar la clave correcta.
-   La clave se compara por su huella (ver verificar.js y acceso-config.js); el campo siempre oculta lo que se escribe.
-   Es una barrera de cortesía del lado del navegador: no reemplaza una protección real del servidor. */
-import { claveValida, sesionValida, recordar, cerrarSesion } from './verificar.js';
+/* Acceso: la simulación solo se carga después de ingresar un usuario y una clave válidos (los verifica el servidor: ver verificar.js y cuentas_api.py). */
+import { ingresar, sesionValida, cerrarSesion } from './verificar.js';
 import { CLIENTES, rutaDe, clienteDeRuta } from './clientes.js';
 
 const $ = s => document.querySelector(s);
@@ -13,8 +11,17 @@ function salir() {
   location.reload();
 }
 document.querySelectorAll('.cerrar-sesion').forEach(b => b.addEventListener('click', salir));
-/** Entra al cliente que indica la ruta del enlace, o muestra la elección de cliente. */
-function entrar() {
+/** Entra según el acceso del usuario: el de un cliente va directo a su interfaz (sea cual sea el enlace); el de acceso total va al cliente del enlace o elige. */
+function entrar(acceso) {
+  window.__acceso = acceso;
+  if (acceso !== 'todos') {                                                       // usuario de un solo cliente: sin elección, sin cambiar de cliente ni editor de tableros
+    document.body.classList.add('un-cliente');
+    const c = CLIENTES[acceso];
+    if (clienteDeRuta()?.id !== c.id) history.replaceState(null, '', location.pathname + location.search + rutaDe(c));
+    abrir(c); return;
+  }
+  $('#btnCuentas').hidden = false;                                                // el perfil de acceso total gestiona las cuentas
+  $('#btnCuentas').addEventListener('click', async () => (await import('./cuentas.js')).abrirCuentas());
   const c = clienteDeRuta();
   if (c) abrir(c); else elegirCliente();
 }
@@ -38,6 +45,11 @@ function elegirCliente() {
   t.href = 'tablero.html'; t.className = 'cliente-op herramienta';
   t.innerHTML = '<strong>TABLERO ELÉCTRICO</strong><small>Editor para diseñar circuitos de tableros</small>';
   lista.appendChild(t);
+  const k = document.createElement('button');                             // gestión de cuentas, solo para el perfil de acceso total
+  k.type = 'button'; k.className = 'cliente-op herramienta';
+  k.innerHTML = '<strong>CUENTAS</strong><small>Crear usuarios, cambiar claves y quitar accesos</small>';
+  k.addEventListener('click', async () => (await import('./cuentas.js')).abrirCuentas());
+  lista.appendChild(k);
 }
 
 async function abrir(cliente) {
@@ -66,24 +78,26 @@ async function abrir(cliente) {
 
 function pedirClave() {
   $('#acceso').classList.remove('verificando');                 // ahora sí hace falta la clave: se muestra el formulario
-  const form = $('#accesoForm'), clave = $('#accesoClave'), msg = $('#accesoMsg');
-  if (!crypto.subtle) { msg.textContent = 'Este navegador no permite verificar la clave aquí: abra la página con https o desde localhost.'; return; }
-  clave.focus();
+  const form = $('#accesoForm'), usuario = $('#accesoUsuario'), clave = $('#accesoClave'), msg = $('#accesoMsg');
+  usuario.focus();
   form.addEventListener('submit', async e => {
     e.preventDefault();
     msg.textContent = '';
-    if (await claveValida(clave.value)) {
-      recordar(clave.value);
-      entrar();                                // después de la clave, el cliente (el de la ruta del enlace, o se elige)
+    const r = await ingresar(usuario.value, clave.value);
+    if (r.acceso) {
+      entrar(r.acceso);                        // directo a su cliente (o, con acceso total, el del enlace o la elección)
     } else {
       clave.value = '';
       form.classList.add('error');
       setTimeout(() => form.classList.remove('error'), 500);
-      msg.textContent = 'Clave incorrecta';
+      msg.textContent = r.error;
       clave.focus();
     }
   });
 }
 
-/* La clave se pide solo la primera vez: queda recordada mientras la pestaña siga abierta (se pierde al cerrarla) y se vuelve a verificar en cada carga. */
-if (await sesionValida()) entrar(); else pedirClave();
+/* El usuario y la clave se piden solo la primera vez: quedan recordados mientras la pestaña siga abierta (se pierde al cerrarla) y se vuelve a verificar en cada carga. */
+{
+  const acceso = await sesionValida();
+  if (acceso) entrar(acceso); else pedirClave();
+}

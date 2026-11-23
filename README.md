@@ -100,20 +100,17 @@ UPS3D/
 `S` (estado) → `compute()` → `E` (resultado) → `applyVisuals()` / `applyLive()`.
 Las acciones modifican `S`; `simulate(dt)` hace evolucionar `S` con el tiempo; `refresh()` recalcula `E` en cada cuadro.
 
-## Clave de acceso
+## Usuarios y claves
 
-La página pide una clave antes de cargar la simulación (el campo siempre oculta lo que se escribe). La clave no está escrita en ningún archivo del proyecto.
-Una vez ingresada, no se vuelve a pedir mientras la pestaña siga abierta. El editor de tableros (`tablero.html`) pide la misma clave.
+La página pide **usuario y clave** y los verifica el servidor (`cuentas_api.py`, dentro de `servidor.py`). Cada usuario entra directo a su cliente: acceso `oxiquim`, `sonacol` o `todos`
+(este último elige cliente, usa el editor de tableros y gestiona las cuentas desde el botón **Cuentas**; los cambios valen al instante para todos).
+Las cuentas están en `usuarios.json` (usuario, acceso y huella PBKDF2 de «usuario + clave»; nunca la clave). El servidor no entrega ese archivo ni los `.py`.
 
-Para cambiarla:
-
-```bash
-python herramientas/generar-clave.py "NuevaClave"
-```
-
-Pegue la línea que imprime en `js/acceso-config.js` (reemplazando `CLAVE_HASH`). En el código solo queda la huella de la clave (PBKDF2-SHA256), no el texto.
-
-> Es una barrera del lado del navegador, pensada para cuidar la presentación frente a terceros: todo el código sigue siendo público en GitHub y alguien con conocimientos podría saltársela. Para una protección real hay que usar un repositorio privado o un servidor con autenticación.
+- **Primer administrador (o trabajo local):** `python herramientas/crear-usuario.py` (pide usuario, clave sin mostrarla y acceso).
+- **En Render** hay que usar un *Web Service* (no un sitio estático): Build Command vacío, Start Command `python servidor.py` (Render define `PORT`). Para que las cuentas creadas desde el panel
+  no se pierdan al reiniciar, el servidor las guarda en este repositorio (un commit a `usuarios.json` con `[skip render]`). Variables de entorno: `GH_TOKEN` (token fino de GitHub con permiso
+  *Contents: Read and write* sobre este repositorio), `GH_REPO` (`IvanLagos/UPS3D`), `GH_RAMA` (`main`) y `SESION_SECRETO` (un texto largo y secreto cualquiera).
+- Las sesiones duran 12 horas y hay un límite de intentos fallidos por minuto. El código de la página sigue siendo público en GitHub: la protección cubre el ingreso a la aplicación, no la lectura de los archivos publicados.
 
 ## Versionado de archivos (evita mezclas de caché en GitHub Pages)
 

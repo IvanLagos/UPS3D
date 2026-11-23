@@ -123,6 +123,7 @@ body.bloqueado #app,body.bloqueado #topbar{display:none}
 #clientesBox h1,#accesoForm h1{font-size:17px;margin:4px 0 0}
 #clientesBox p,#accesoForm p{margin:0;color:var(--muted);font-size:13px}
 #accesoForm input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;text-align:center;letter-spacing:.12em}
+body.un-cliente #btnCambiarCliente,body.un-cliente .enlace-tablero{display:none}
 #accesoForm input:focus{outline:2px solid var(--accent);border-color:transparent}
 #accesoForm button{padding:11px;font-weight:700}
 #accesoMsg{min-height:18px;color:var(--bad);font-size:13px}
@@ -220,3 +221,19 @@ details.montaje[open]>summary{margin-bottom:10px}
 #uni g.on .l,#uni .l.on{fill:var(--accent)}
 #uni .blk.ext{stroke:var(--warn);stroke-width:1.4}
 #uni.ext #rLoadG{display:none}
+
+/* gestión de cuentas */
+#cuentas{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px}
+#cuentas[hidden]{display:none}
+.cuentas-caja{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:14px}
+.cuentas-caja header{display:flex;justify-content:space-between;align-items:center}
+.cuentas-caja h2{font-size:17px;margin:0}
+.cuentas-caja h3{font-size:13px;margin:0 0 8px;color:var(--muted)}
+.cuenta-fila{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.cuenta-acceso{color:var(--muted);font-size:12px}
+#cuentasForm{display:grid;gap:8px}
+#cuentasForm input,#cuentasForm select,#cuentasSalida{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+#cuentasSalida{width:100%;box-sizing:border-box;font:11px/1.35 ui-monospace,Consolas,monospace;resize:vertical;margin-top:8px}
+#cuentasMsg{min-height:18px;font-size:12px;color:var(--accent);margin-top:6px}
+#cuentasMsg.bad{color:var(--bad)}
+#btnCuentas[hidden]{display:none}

@@ -6,7 +6,10 @@ import http.server
 import os
 import sys
 
-PUERTO = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
+import cuentas_api
+
+PRODUCCION = 'PORT' in os.environ                       # en Render: sin recarga automática, escucha en todas las interfaces y oculta archivos internos
+PUERTO = int(os.environ['PORT']) if PRODUCCION else int(sys.argv[1]) if len(sys.argv) > 1 else 8765
 RAIZ = os.path.dirname(os.path.abspath(__file__))
 VIGILADOS = ('.html', '.js', '.css', '.png', '.ico', '.svg', '.json')
 EXCLUIDOS = {'.git', 'herramientas', '__pycache__', 'node_modules'}
@@ -62,8 +65,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.command != 'HEAD':
             self.wfile.write(cuerpo)
 
+    def _ruta(self):
+        return self.path.split('?')[0].split('#')[0]
+
+    def do_POST(self):
+        if not cuentas_api.manejar(self, 'POST', self._ruta()):
+            self.send_error(404)
+
+    def do_DELETE(self):
+        if not cuentas_api.manejar(self, 'DELETE', self._ruta()):
+            self.send_error(404)
+
     def do_GET(self):
-        ruta = self.path.split('?')[0].split('#')[0]
+        ruta = self._ruta()
+        if cuentas_api.manejar(self, 'GET', ruta):
+            return
+        if ruta.endswith(('.py', '.json.tmp')) or ruta.lower().startswith(('/usuarios.json', '/.git')):          # archivos internos: nunca se sirven
+            return self.send_error(404)
+        if PRODUCCION and ruta in ('/', '/index.html', '/tablero.html'):
+            return super().do_GET()
         if ruta == '/__cambios':
             return self._enviar(huella_de_archivos().encode(), 'text/plain; charset=utf-8')
         if ruta in ('/', '/index.html', '/tablero.html'):
@@ -84,6 +104,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 http.server.ThreadingHTTPServer.daemon_threads = True
-with http.server.ThreadingHTTPServer(('', PUERTO), Handler) as httpd:
+with http.server.ThreadingHTTPServer(('0.0.0.0' if PRODUCCION else '', PUERTO), Handler) as httpd:
     print(f'UPS Modular 3D en http://localhost:{PUERTO}/  (Ctrl+C para detener)')
     httpd.serve_forever()

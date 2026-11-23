@@ -1,34 +1,33 @@
-/* Verificación de la clave, compartida por la página principal y el editor de tableros.
-   La huella usa PBKDF2 (lenta a propósito) para que adivinar la clave a partir de la huella pública cueste mucho.
-   En la pestaña se recuerda la clave escrita (no la huella), y en cada carga se vuelve a verificar: así nadie puede
-   «fabricar» una sesión a mano con los datos públicos del código.
-   Sigue siendo una barrera del lado del navegador: no reemplaza una protección real del servidor. */
-import { SAL, ITER, CLAVE_HASH } from './acceso-config.js';
+/* Ingreso por usuario y clave, compartido por la página principal y el editor de tableros.
+   La verificación la hace el servidor (api/ingresar): devuelve un token firmado que dura 12 horas y se guarda en esta pestaña.
+   En cada carga se vuelve a comprobar con el servidor (api/sesion), así nadie puede «fabricar» una sesión a mano. */
+const SESION = 'ups3d-sesion';
 
-const SESION = 'ups3d-acceso';
+export const token = () => { try { return sessionStorage.getItem(SESION); } catch (err) { return null; } };
+/** Cabeceras con la sesión, para las llamadas a la API. */
+export const cabeceras = () => ({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token() || '') });
 
-export async function huella(txt) {
-  const enc = new TextEncoder();
-  const base = await crypto.subtle.importKey('raw', enc.encode(txt), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(SAL), iterations: ITER }, base, 256);
-  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-export const claveValida = async txt => !!txt && (await huella(txt)) === CLAVE_HASH;
-
-/** ¿Esta pestaña ya ingresó una clave correcta? */
-export async function sesionValida() {
+/** Ingresa con usuario y clave. Devuelve { acceso, usuario } o { error } con el motivo. */
+export async function ingresar(usuario, clave) {
   try {
-    const g = sessionStorage.getItem(SESION);
-    return !!g && await claveValida(g);
-  } catch (err) { return false; }
+    const r = await fetch('api/ingresar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario, clave }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: d.error || 'No se pudo ingresar' };
+    try { sessionStorage.setItem(SESION, d.token); } catch (err) { /* sin sessionStorage: pedirá el ingreso al recargar */ }
+    return { acceso: d.acceso, usuario: d.usuario };
+  } catch (err) { return { error: 'No se pudo conectar con el servidor' }; }
 }
 
-export function recordar(txt) {
-  try { sessionStorage.setItem(SESION, txt); } catch (err) { /* sin sessionStorage: pedirá la clave al recargar */ }
+/** Acceso de la sesión de esta pestaña ('oxiquim', 'sonacol' o 'todos'), o null si no ingresó o ya venció. */
+export async function sesionValida() {
+  if (!token()) return null;
+  try {
+    const r = await fetch('api/sesion', { headers: cabeceras() });
+    return r.ok ? (await r.json()).acceso : null;
+  } catch (err) { return null; }
 }
 
-/** Olvida la clave de esta pestaña: la próxima carga volverá a pedirla. */
+/** Olvida el ingreso de esta pestaña: la próxima carga volverá a pedirlo. */
 export function cerrarSesion() {
   try { sessionStorage.removeItem(SESION); } catch (err) { /* nada */ }
 }

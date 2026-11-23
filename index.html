@@ -6,14 +6,15 @@
 <title>Fernández Fica · UPS Modular 3D</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="stylesheet" href="css/styles.css?v=7fd115a7">
+<link rel="stylesheet" href="css/styles.css?v=b5466ab1">
 </head>
 <body class="bloqueado">
 <div id="acceso" class="verificando">
   <form id="accesoForm" autocomplete="off">
     <img src="assets/logo-fernandez-fica.png" alt="Fernández Fica">
     <h1>Paralelo redundante</h1>
-    <p>Ingrese la clave de acceso</p>
+    <p>Ingrese su usuario y clave</p>
+    <input type="text" id="accesoUsuario" placeholder="Usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
     <input type="password" id="accesoClave" placeholder="Clave" autocomplete="current-password" required>
     <button class="primary" type="submit">Ingresar</button>
     <div id="accesoMsg" role="alert"></div>
@@ -31,7 +32,7 @@
   </div>
 </div>
 <div id="topbar">
-<div class="cliente-tag">Cliente: <strong id="clienteNombre"></strong> <a href="tablero.html" class="enlace-tablero">Tablero eléctrico</a> <button type="button" id="btnCambiarCliente">Cambiar cliente</button> <button type="button" class="cerrar-sesion">Cerrar sesión</button></div>
+<div class="cliente-tag">Cliente: <strong id="clienteNombre"></strong> <a href="tablero.html" class="enlace-tablero">Tablero eléctrico</a> <button type="button" id="btnCuentas" hidden>Cuentas</button> <button type="button" id="btnCambiarCliente">Cambiar cliente</button> <button type="button" class="cerrar-sesion">Cerrar sesión</button></div>
 </div>
 <div id="app">
   <div id="left">
@@ -273,8 +274,7 @@
 {"imports":{
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-  "./js/acceso-config.js": "./js/acceso-config.js?v=5c2287fb",
-  "./js/acceso.js": "./js/acceso.js?v=78da57aa",
+  "./js/acceso.js": "./js/acceso.js?v=642c7af6",
   "./js/clientes.js": "./js/clientes.js?v=816a4454",
   "./js/config.js": "./js/config.js?v=ab11e797",
   "./js/core/bus.js": "./js/core/bus.js?v=e4b15e60",
@@ -285,7 +285,8 @@
   "./js/core/pantallaCarga.js": "./js/core/pantallaCarga.js?v=52b990da",
   "./js/core/scene.js": "./js/core/scene.js?v=ae28e3d9",
   "./js/core/tween.js": "./js/core/tween.js?v=97aeed8d",
-  "./js/guardia-tablero.js": "./js/guardia-tablero.js?v=39b6f10e",
+  "./js/cuentas.js": "./js/cuentas.js?v=a84c886b",
+  "./js/guardia-tablero.js": "./js/guardia-tablero.js?v=439510f1",
   "./js/logic/actions.js": "./js/logic/actions.js?v=975f0798",
   "./js/logic/electrical.js": "./js/logic/electrical.js?v=f7356374",
   "./js/logic/refresh.js": "./js/logic/refresh.js?v=07487548",
@@ -310,10 +311,10 @@
   "./js/ui/sync.js": "./js/ui/sync.js?v=a0a8bd64",
   "./js/ui/visuals.js": "./js/ui/visuals.js?v=74b40aec",
   "./js/ui/zoom.js": "./js/ui/zoom.js?v=330b4b9b",
-  "./js/verificar.js": "./js/verificar.js?v=61023832",
+  "./js/verificar.js": "./js/verificar.js?v=1d638b92",
   "./tablero/modelos.js": "./tablero/modelos.js?v=cb0737d7"
 }}
 </script>
-<script type="module" src="js/acceso.js?v=78da57aa"></script>
+<script type="module" src="js/acceso.js?v=642c7af6"></script>
 </body>
 </html>

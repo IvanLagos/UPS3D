@@ -55,11 +55,13 @@ async function abrir(cliente) {
     if (!c || c.id !== cliente.id) { location.reload(); }          // atrás (sin cliente en la ruta) vuelve a la elección de cliente
   });
   document.body.classList.remove('bloqueado');
-  $('#acceso')?.remove();
+  $('#accesoForm').hidden = true; $('#clientesBox').hidden = true; $('#cargando').hidden = false;   // la pantalla de carga tapa la app hasta que el cliente esté listo (si no, se vería un instante el modelo base)
   window.__authOk = true;
   window.__vigilar?.();                         // arranca la vigilancia de carga del index.html
-  await import('./main.js');
-  if (cliente.id === 'sonacol') await import('./sonacol/sonacol.js');          // SONACOL: selector con sus 3 circuitos
+  try {
+    await import('./main.js');
+    if (cliente.id === 'sonacol') await import('./sonacol/sonacol.js');          // SONACOL: selector con sus 3 circuitos
+  } finally { $('#acceso')?.remove(); }        // también si falla: así se ve el aviso de error de la página
 }
 
 function pedirClave() {

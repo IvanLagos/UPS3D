@@ -208,3 +208,9 @@ details.montaje[open]>summary{margin-bottom:10px}
 #sonUni .swc.live{fill:#16352a;stroke:var(--accent)}
 #sonUni .swp{fill:#6b7888}
 #sonUni .sw:hover .swl{stroke-width:5}
+
+#cargando{display:grid;gap:10px;justify-items:center;color:var(--muted)}
+#cargando[hidden]{display:none}
+#cargando img{width:min(260px,70vw)}
+#cargando p{margin:0;font-size:14px;animation:cargando 1.2s ease-in-out infinite}
+@keyframes cargando{50%{opacity:.4}}

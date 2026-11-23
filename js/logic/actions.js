@@ -198,7 +198,9 @@ export function setUnitBypass(u, v) {
   if (!E.units[u].present) return toast(`La UPS ${u + 1} no está instalada.`);
   applyBypass(v);
   const sinEntrada = E.units.some(x => x.present && !x.inAvail);
+  const e2 = v ? null : compute();                                   // con la orden ya aplicada: ¿puede quedar en inversor?
   toast(v ? (sinEntrada ? 'Bypass sin tensión en la entrada: las UPS botan la carga y se apagan en 2 s' : 'Sistema transferido a bypass estático (las UPS están comunicadas)')
+          : e2.overload ? `No puede quedar en inversor: la carga (${S.load} kW) supera lo que sostienen las UPS en inversor (${e2.cap} kW), por eso sigue en bypass. Reduzca la carga.`
           : 'Sistema pasa a inversor (las UPS están comunicadas)');
   syncSwitches();
 }

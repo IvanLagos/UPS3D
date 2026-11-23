@@ -70,10 +70,10 @@ export function initControls() {
     [0, 1].forEach(b => { $(`#btnB${u}${b}`).onclick = () => setBankFault(u, b); });
   });
 
-  $('#swFront').onchange = e => setDoor(doorF, e.target.checked);
-  $('#swRear').onchange = e => setDoor(doorR, e.target.checked);
+  $('#swFront').onchange = e => setDoor(doorF, !e.target.checked);        // verde = cerrada
+  $('#swRear').onchange = e => setDoor(doorR, !e.target.checked);
   $('#swSides').onchange = e => setSides(e.target.checked);
-  $('#swCover').onchange = e => setCover(e.target.checked);
+  $('#swCover').onchange = e => setCover(!e.target.checked);
 
   // configuración del bypass de rodeo (botón del diagrama unifilar)
   $('#btnModeConm').onclick = () => setBypassMode('conmutador');

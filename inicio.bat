@@ -18,6 +18,13 @@ if %errorlevel%==0 (
 )
 
 echo Iniciando UPS Modular 3D en http://localhost:%PUERTO%/
+echo La pagina se recarga sola cuando cambian los archivos.
 echo Cierre esta ventana para detener el servidor.
 start "" "http://localhost:%PUERTO%/index.html"
+
+:servidor
 %PY% servidor.py %PUERTO%
+echo.
+echo El servidor se detuvo. Reiniciando en 2 segundos... (cierre esta ventana para salir)
+timeout /t 2 /nobreak >nul
+goto servidor

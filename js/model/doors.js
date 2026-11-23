@@ -46,7 +46,7 @@ function addGlassWindow(pivot) {
 }
 
 /** Cabecera de la puerta: logo de Fernández Fica a la izquierda y placa informativa negra a la derecha. */
-function addHeader(pivot) {
+function addHeader(pivot, lineas = ['UPS modular 2 × 10 kVA', 'Potencia total 20 kW', '220–240 VAC · 240 VDC']) {
   const logoTex = new THREE.TextureLoader().load('assets/logo-fernandez-fica.png');
   logoTex.colorSpace = THREE.SRGBColorSpace; logoTex.anisotropy = 8;
   const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.23, 0.23 / 3.85), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, toneMapped: false }));
@@ -58,15 +58,14 @@ function addHeader(pivot) {
   g.strokeStyle = '#3a3d42'; g.lineWidth = 4; g.strokeRect(6, 6, 488, 268);
   g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillStyle = '#e8eef4'; g.font = '600 34px system-ui, sans-serif';
-  g.fillText('UPS modular 2 × 10 kVA', 250, 70);
-  g.fillText('Potencia total 20 kW', 250, 140);
-  g.fillText('220–240 VAC · 240 VDC', 250, 210);
+  lineas.forEach((t, i) => g.fillText(t, 250, 70 + 70 * i));
   const plateTex = new THREE.CanvasTexture(pc); plateTex.colorSpace = THREE.SRGBColorSpace; plateTex.anisotropy = 8;
   const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.105, 0.0588), new THREE.MeshBasicMaterial({ map: plateTex, toneMapped: false }));
   plate.position.set(0.52, 1.937, 0.0115); pivot.add(plate);
 }
 
-function makeDoor(side) {
+/** Puerta del rack: en `parent` (por defecto el rack del circuito 3). opc: { fans: lista de ventiladores, placa: 3 líneas de texto, onClick(pivot) }. */
+export function makeDoor(side, parent = rack, opc = {}) {
   const front = side === 'front';
   const dir = front ? 1 : -1;
   const pivot = new THREE.Group();
@@ -79,13 +78,13 @@ function makeDoor(side) {
     leaf(0.075, 1.27, 0.0375, 1.255);      // lado bisagra
     leaf(0.095, 1.27, 0.5525, 1.255);     // lado cerradura
     addGlassWindow(pivot);
-    addHeader(pivot);
+    addHeader(pivot, opc.placa);
     // rejilla con ventilador: atraviesa la puerta, se ve por fuera y por dentro
     box(0.32, 0.3, 0.01, M.dark, cx, 0.385, 0.012, pivot);
-    const f = makeFan(0.12); f.position.set(cx, 0.385, 0.022); pivot.add(f);
+    const f = makeFan(0.12, opc.fans); f.position.set(cx, 0.385, 0.022); pivot.add(f);
     addLouver(pivot, cx, 0.385, 0.3, 0.28, 9, 1);
     box(0.32, 0.3, 0.01, M.dark, cx, 0.385, -0.012, pivot);
-    const fi = makeFan(0.12); fi.position.set(cx, 0.385, -0.022); fi.scale.x = -1; pivot.add(fi);
+    const fi = makeFan(0.12, opc.fans); fi.position.set(cx, 0.385, -0.022); fi.scale.x = -1; pivot.add(fi);
     addLouver(pivot, cx, 0.385, 0.3, 0.28, 9, -1);
   } else {
     box(0.6, 1.81, 0.02, M.frame, cx, 1.055, 0, pivot);
@@ -97,8 +96,8 @@ function makeDoor(side) {
   }
   box(0.025, 0.14, 0.03, M.handle, dir * 0.56, 1.0, 0.03 * dir, pivot);   // cerradura
   pivot.userData = { open: false, side };
-  rack.add(pivot);
-  markClick(pivot, () => actions.toggleDoor(pivot));
+  parent.add(pivot);
+  markClick(pivot, () => (opc.onClick ? opc.onClick(pivot) : actions.toggleDoor(pivot)));
   return pivot;
 }
 

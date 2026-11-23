@@ -3,11 +3,12 @@
 import { $ } from '../core/dom.js';
 import { tween } from '../core/tween.js';
 import { S, E } from '../state.js';
-import { RAIL_ITEMS, CB_IN, CB_OUT, MODE_TXT, BANK_KWH } from '../config.js';
+import { RAIL_ITEMS, CB_IN, CB_OUT, MODE_TXT, BANK_KWH, UPS_KW } from '../config.js';
 import { powerMods, battMods } from '../model/modules.js';
 import { breakers, LEVER_ANGLE } from '../model/breakerPanel.js';
 import { applyCircuito } from '../model/circuito.js';
-import { bulbMat, cableMat, lossMark } from '../model/load.js';
+import { cableMat, loadScr } from '../model/load.js';
+import { dibujarCarga } from '../core/pantallaCarga.js';
 import { paintUpsButtons } from './sync.js';
 
 const SEL_ANGLE = { 1: Math.PI / 4, 0: 0, 2: -Math.PI / 4 };   // giro de la manija del conmutador en el rack
@@ -27,6 +28,8 @@ export function applyVisuals() {
 
   powerMods.forEach((m, u) => setLed(m.userData.ledMat, m.userData.state === 'in' && units[u].stateFault ? 0xff3030 : m.userData.state === 'in' && units[u].inv ? 0x22ff88 : 0));
   paintUpsButtons();
+  $('#btnInv').classList.toggle('on', units.some(x => x.mode === 'normal' || x.mode === 'bateria'));
+  $('#btnByp').classList.toggle('on', units.some(x => x.mode === 'bypass'));
   for (const m of battMods) {
     const x = units[m.userData.unit];
     const bad = m.userData.state === 'in' && S.bankFault[m.userData.unit][m.userData.n];
@@ -52,11 +55,7 @@ export function applyVisuals() {
 
   applyBoardWiring();
 
-  // luz de la carga: verde tipo semáforo, sin resplandor; si se pierde la carga se apaga y aparece una X roja
-  bulbMat.color.setHex(out ? 0x00b84a : 0x1a1d1b);     // apagada: gris oscuro
-  bulbMat.emissive.setHex(out ? 0x00b84a : 0x000000);
-  bulbMat.emissiveIntensity = out ? 0.9 : 0;
-  lossMark.visible = !out;                              // sin energía: X roja sobre la carga
+  // carga: su pantalla muestra el % de carga, los kVA y, sin energía, una X roja con 0 % y 0 kW
   cableMat.emissive.setHex(out ? 0x1fa85f : 0x000000);
 
   $('#r_aux').classList.toggle('on', S.auxSenal); $('#r_aux').style.display = S.auxRodeo ? '' : 'none';     // contacto auxiliar en el diagrama
@@ -134,14 +133,15 @@ function applyAlarms() {
   if (E.conm && S.sel === 0) al.push(['Conmutador bypass en 0: carga desconectada (ni red ni UPS)', 'bad']);
   if (!S.mains) al.push(['Falla de red eléctrica', 'bad']);
   else if (!S.CB.CB5) al.push(['General abierto (CB5): sin tensión en las UPS', 'bad']);
-  if (E.overload) al.push([E.overloadBypass ? 'Sobrecarga: transferido a bypass' : 'Sobrecarga: inversor apagado', 'bad']);
+  if (E.overload) al.push([E.overloadBypass ? 'Sobrecarga: transferido a bypass' : E.overloadSuave ? `Sobrecarga (${Math.round(S.load / E.cap * 100)} %): las UPS la sostienen con baterías; sobre el 115 % cortan la carga` : 'Sobrecarga: inversor apagado, carga cortada', 'bad']);
+  else if (E.redundancyLost) al.push([`Redundancia perdida: la carga (${S.load} kW) supera la capacidad de una UPS (${UPS_KW} kW). Si una UPS deja de entregar, la otra quedará en sobrecarga`, 'bad']);
   units.forEach((x, u) => {
     const n = u + 1;
     if (!x.present) return;
     if (gen && !S.CB[CB_IN[u]] && x.mode !== 'apagada') al.push([`Entrada UPS ${n} abierta (${CB_IN[u]}): ${x.banks ? 'opera solo con baterías' : 'apagada, sin respaldo'}`, 'bad']);
     if (S.risk[u]) al.push([`UPS ${n}: maniobra de salida con la UPS en servicio, riesgo de daño en la tarjeta`, 'bad']);
     if (x.standby) al.push([`UPS ${n} en stand by: su carga está en la UPS ${2 - u}. Para retirarla abra ${CB_IN[u]} y luego ${CB_OUT[u]}`, '']);
-    if (x.stateFault) al.push([`FALLA en la UPS ${n}: aislada del sistema${E.units[1 - u].deliver ? `, la carga la sostiene la UPS ${2 - u}` : ''}`, 'bad']);
+    if (x.stateFault) al.push([`FALLA en la UPS ${n}: aislada del sistema${E.units[1 - u].deliver && !E.overload ? `, la carga la sostiene la UPS ${2 - u}` : ''}`, 'bad']);
     if (!S.CB[CB_OUT[u]]) al.push([S.tripped[u] ? `Salida UPS ${n} disparada por sobrecorriente (${CB_OUT[u]}): repóngala a mano después de restablecer la UPS` : `Salida UPS ${n} abierta (${CB_OUT[u]}): aislada de la carga`, 'bad']);
     if (x.mode === 'transfer' && x.outClosed && E.selUps) al.push([`UPS ${n} sin tensión en la entrada en bypass: la carga cayó y se apagará en ${Math.max(0, 2 - S.dropT[u]).toFixed(1)} s`, 'bad']);
     if (x.mode === 'apagada') al.push(S.manual[u] ? [`UPS ${n} apagada tras perder el suministro en stand by: la carga sigue en la UPS ${2 - u}. Puede abrir ${CB_OUT[u]} y retirarla`, ''] : S.byp[u] ? [`UPS ${n} apagada: perdió la entrada estando en bypass`, 'bad'] : [`UPS ${n} apagada: espera tensión en su entrada (${CB_IN[u]}) para arrancar`, '']);
@@ -176,6 +176,23 @@ export function applyLive() {
   const aut = autonomy(units);
   $('#mAut').textContent = nB === 0 ? '0 min' : aut === null ? '—' : `${Math.round(aut)} min`;
   drawScreen();
+  drawLoad();
+  drawBatteries();
+  if (!window.__sonacolActivo || window.__sonacolActivo === 3) $('#avisoRedund').hidden = !E.redundancyLost;   // en SONACOL el letrero lo maneja el circuito que se está viendo
+}
+
+/** Pantalla de la carga: % sobre la capacidad de las UPS que entregan (20 kW si no hay inversores), potencia y aviso de sobrecarga. */
+function drawLoad() {
+  const cap = E.cap > 0 ? E.cap : 2 * UPS_KW;
+  dibujarCarga(loadScr, 'CARGA', S.load, 'kW', E.out, S.load / cap * 100, E.redundancyLost);
+}
+
+/** Porcentaje de carga de cada banco de baterías en el diagrama unifilar (la carga es de la UPS; sin banco instalado se muestra «—»). */
+function drawBatteries() {
+  E.units.forEach((x, u) => [0, 1].forEach(b => {
+    const t = $(`#n_bat${u + 1}_${b + 1}`)?.nextElementSibling;
+    if (t) t.textContent = x.bk[b] === 'miss' ? `B${b + 1} —` : `B${b + 1} ${Math.round(S.soc[u])}%`;
+  }));
 }
 
 /** Dibuja la pantalla de cada UPS. */

@@ -14,12 +14,12 @@ import { BREAKERS, RAIL_ITEMS, SELECTOR, BYPASS_BREAKER } from '../config.js';
 import { panelGrp, breakerPos, breakerGroups, breakers, showBypassModel, sinEsferas, SC, MOD } from './breakerPanel.js';
 import { build as buildPieza, P as POLO } from '../../tablero/modelos.js';
 
-const COVER_W = 0.55, COVER_Z = 0.357, T = 0.008;   // ancho, profundidad (centro) y espesor de las placas
-const FACE_Z = COVER_Z + T / 2;                     // cara exterior
+export const COVER_W = 0.55, COVER_Z = 0.357, T = 0.008;   // ancho, profundidad (centro) y espesor de las placas
+export const FACE_Z = COVER_Z + T / 2;                     // cara exterior
 const OPEN_ANGLE = -1.75;                           // giro al abrirla (≈100° hacia afuera) sobre la bisagra del borde izquierdo
 
 /** Placa crema entre las alturas y0..y1, con ranuras opcionales (`holes`: rectangulares { x, y, hw, hh } o redondas { x, y, r }) y 4 tornillos. */
-function makeCover(y0, y1, tip, holes = []) {
+export function makeCover(y0, y1, tip, holes = [], parent = panelGrp, onClick = null) {
   const g = new THREE.Group(), h = y1 - y0, cy = (y0 + y1) / 2;
   g.userData.tip = tip;
   /** Placa de la tapa con las ranuras indicadas. */
@@ -46,12 +46,12 @@ function makeCover(y0, y1, tip, holes = []) {
     box(0.01, 0.0015, 0.0015, M.dark, x, y, FACE_Z + 0.0062, g).rotation.z = Math.PI / 4;
   }
   g.userData.open = false;
-  markClick(g, () => actions.toggleCover(g));
+  markClick(g, () => (onClick ? onClick(g) : actions.toggleCover(g)));
   // bisagra en el borde izquierdo: el contenido (g) cuelga de ella y la tapa gira al cambiar su ángulo
   const hinge = new THREE.Group(); hinge.position.set(-COVER_W / 2, 0, COVER_Z);
   g.position.set(COVER_W / 2, 0, -COVER_Z);
   hinge.add(g); g.userData.hinge = hinge;
-  panelGrp.add(hinge);
+  parent.add(hinge);
   return g;
 }
 

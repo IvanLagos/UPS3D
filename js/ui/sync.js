@@ -11,8 +11,9 @@ import { powerMods, upsBtns } from '../model/modules.js';
 export function paintUpsButtons() {
   powerMods.forEach((m, u) => {
     const off = E.units[u].mode === 'apagada';
-    upsBtns.inv[u].emissiveIntensity = off ? 0 : S.byp[u] ? 0.15 : 1.2;
-    upsBtns.byp[u].emissiveIntensity = off ? 0 : S.byp[u] ? 1.2 : 0.15;
+    const enByp = E.units[u].mode === 'bypass';                    // se iluminan según el modo real de la UPS
+    upsBtns.inv[u].emissiveIntensity = off ? 0 : enByp ? 0.15 : 1.2;
+    upsBtns.byp[u].emissiveIntensity = off ? 0 : enByp ? 1.2 : 0.15;
     upsBtns.tr[u].emissiveIntensity = off ? 0 : S.standby.some(Boolean) ? 1.2 : 0.15;
     upsBtns.bat[u].emissiveIntensity = off ? 0 : S.cfg[u] < 2 ? 1.2 : 0.15;
   });
@@ -29,8 +30,8 @@ export function syncSwitches() {
     $('#btnC' + u).classList.toggle('on', S.cfg[u] < 2);
     [0, 1].forEach(b => $(`#btnB${u}${b}`).classList.toggle('on', S.bankFault[u][b]));
   });
-  $('#btnInv').classList.toggle('on', !S.byp.some(Boolean));
-  $('#btnByp').classList.toggle('on', S.byp.some(Boolean));
+  $('#btnInv').classList.toggle('on', E.units.some(x => x.mode === 'normal' || x.mode === 'bateria'));     // muestran el modo REAL de las UPS (con sobrecarga una UPS pedida en inversor queda en bypass)
+  $('#btnByp').classList.toggle('on', E.units.some(x => x.mode === 'bypass'));
   paintUpsButtons();
   for (const u of [0, 1]) {
     $('#btnT' + u).textContent = S.standby[u] ? `UPS ${u + 1} en stand by · retomar carga` : `Traspasar UPS ${u + 1} → UPS ${2 - u} (stand by)`;
@@ -40,10 +41,10 @@ export function syncSwitches() {
     $('#btnF' + u).textContent = S.fault[u] ? `UPS ${u + 1} en falla · restablecer` : `Falla UPS ${u + 1}`;
     $('#btnF' + u).classList.toggle('bad', S.fault[u]);
   }
-  $('#swFront').checked = doorF.userData.open;
-  $('#swRear').checked = doorR.userData.open;
+  $('#swFront').checked = !doorF.userData.open;          // verde = cerrada
+  $('#swRear').checked = !doorR.userData.open;
   $('#swSides').checked = sidesAreClosed();
-  $('#swCover').checked = covers.every(isCoverOpen);
+  $('#swCover').checked = !covers.some(isCoverOpen);
   // configuración del bypass de rodeo: conmutador 1-0-2 o interruptor CB7 (la anterior)
   const conm = S.bypassMode === 'conmutador';
   $('#btnModeConm').classList.toggle('on', conm);

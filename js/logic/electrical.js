@@ -1,7 +1,7 @@
 /* Lógica eléctrica: a partir del estado S calcula qué energizado está cada tramo, el modo de cada UPS y la salida.
    Es una función pura de S y de lo instalado en el rack (no modifica nada). */
 import { S } from '../state.js';
-import { CB_IN, CB_OUT, UPS_KW } from '../config.js';
+import { CB_IN, CB_OUT, UPS_KW, OVERLOAD_CUT } from '../config.js';
 import { powerMods, battMods } from '../model/modules.js';
 
 export function compute() {
@@ -30,10 +30,12 @@ export function compute() {
   // sobrecarga: las UPS con inversor que entregan a la carga deben cubrirla (10 kW cada una)
   const nInvDel = units.filter(x => x.useInv && x.outClosed && !x.standby).length;
   const overload = nInvDel > 0 && S.load > nInvDel * UPS_KW;
+  const redundancyLost = nInvDel >= 2 && S.load > UPS_KW;         // con las 2 UPS entregando, pero la carga ya no cabe en una sola: si una deja de entregar, la otra queda en sobrecarga
   let overloadBypass = false;
+  const sobreCorte = nInvDel > 0 && S.load > nInvDel * UPS_KW * OVERLOAD_CUT;      // sobre el 115 %: con baterías la UPS corta la carga
   if (overload) for (const x of units) if (x.useInv) {
-    x.useInv = false;
-    if (x.bypassFeed) overloadBypass = true; else x.shut = true;
+    if (x.bypassFeed) { x.useInv = false; overloadBypass = true; }                    // con tensión de entrada, la sobrecarga pasa la UPS a bypass
+    else if (sobreCorte) { x.useInv = false; x.shut = true; }                          // sin entrada: del 100 % al 115 % sigue entregando con aviso; sobre el 115 % corta la carga
   }
 
   for (const x of units) {
@@ -61,5 +63,5 @@ export function compute() {
   const mode0 = !modes.length ? (units.some(x => x.present && x.stateOff && !x.stateFault) ? 'apagada' : 'none') : modes.every(m => m === modes[0]) ? modes[0] : 'mixto';
   const mode = rodeo && !del.length ? 'rodeo' : mode0;
 
-  return { gen, units, del, nM, nB, cap, overload, overloadBypass, src, mode, out, inv: units.some(x => x.inv), bypassFeed: units.some(x => x.bypassFeed), busUps, rodeo, rodeoFalla, conm, selUps, sel: S.sel };
+  return { gen, units, del, nM, nB, cap, overload, overloadSuave: overload && units.some(x => x.useInv), redundancyLost, overloadBypass, src, mode, out, inv: units.some(x => x.inv), bypassFeed: units.some(x => x.bypassFeed), busUps, rodeo, rodeoFalla, conm, selUps, sel: S.sel };
 }

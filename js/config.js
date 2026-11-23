@@ -37,5 +37,6 @@ export const MODE_TXT = {
 
 /* Capacidad del modelo provisional IUiR-10KW */
 export const UPS_KW = 10;          // potencia de cada UPS
+export const OVERLOAD_CUT = 1.15;  // con baterías (sin entrada) la UPS sostiene hasta el 115 % con aviso de sobrecarga; sobre eso corta la carga
 export const BANK_KWH = 2;         // energía de cada banco de baterías
 export const CHARGE_KW = 3;        // potencia de carga de baterías

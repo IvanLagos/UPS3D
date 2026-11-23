@@ -21,6 +21,7 @@ function entrar() {
 
 /** Pantalla para elegir el cliente, después de ingresar la clave. */
 function elegirCliente() {
+  $('#acceso').classList.remove('verificando');
   $('#accesoForm').hidden = true;
   const caja = $('#clientesBox'), lista = $('#clientesLista');
   caja.hidden = false;
@@ -41,7 +42,7 @@ function elegirCliente() {
 
 async function abrir(cliente) {
   window.__cliente = cliente;
-  if (location.hash !== rutaDe(cliente)) location.hash = rutaDe(cliente);          // el enlace cambia con el cliente
+  if (clienteDeRuta()?.id !== cliente.id) history.pushState(null, '', location.pathname + location.search + rutaDe(cliente));   // el enlace cambia con el cliente (sin recargar la página; «atrás» vuelve a la elección)
   document.body.dataset.cliente = cliente.id;
   document.title = `Fernández Fica · UPS Modular 3D · ${cliente.nombre}`;
   $('#clienteNombre').textContent = cliente.nombre;
@@ -58,9 +59,11 @@ async function abrir(cliente) {
   window.__authOk = true;
   window.__vigilar?.();                         // arranca la vigilancia de carga del index.html
   await import('./main.js');
+  if (cliente.id === 'sonacol') await import('./sonacol/sonacol.js');          // SONACOL: selector con sus 3 circuitos
 }
 
 function pedirClave() {
+  $('#acceso').classList.remove('verificando');                 // ahora sí hace falta la clave: se muestra el formulario
   const form = $('#accesoForm'), clave = $('#accesoClave'), msg = $('#accesoMsg');
   if (!crypto.subtle) { msg.textContent = 'Este navegador no permite verificar la clave aquí: abra la página con https o desde localhost.'; return; }
   clave.focus();

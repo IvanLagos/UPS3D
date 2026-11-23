@@ -81,23 +81,9 @@ automatico('CB8', -0.14, 'CB8 ENTRADA', 'CB8 · Entrada del tablero externo (agu
 automatico('CB9', 0.04, 'CB9 BYPASS', 'CB9 · Bypass externo (de aguas abajo de CB8 a aguas arriba de CB10) · clic para cerrarlo o abrirlo, con su contacto auxiliar adelantado', () => setExtBypass(!S.ext.byp), true);
 automatico('CB10', 0.16, 'CB10 SALIDA', 'CB10 · Salida del tablero externo (a la carga) · clic para abrirla o cerrarla', () => setExtOut(!S.ext.out));
 
-{                                                               // perilla negra a la izquierda y cuadro con el unifilar del tablero, como el de la foto
+{                                                               // perilla negra a la izquierda, como la de la foto
   const kb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.022, 0.012, 20).rotateX(Math.PI / 2), std(0x151517, 0.5, 0.4)); kb.position.set(-0.17, 0.0, ZP + 0.01); gab.add(kb);
   const pal = box(0.05, 0.014, 0.012, std(0x151517, 0.5, 0.4), -0.17, 0.0, ZP + 0.02, gab); pal.rotation.z = 0.5;
-  const c = document.createElement('canvas'); c.width = 720; c.height = 400; const g = c.getContext('2d');
-  g.fillStyle = '#fff'; g.fillRect(0, 0, 720, 400); g.strokeStyle = '#000'; g.fillStyle = '#000'; g.lineWidth = 3; g.textAlign = 'center'; g.font = 'bold 20px system-ui, sans-serif';
-  g.fillText('TABLERO DE BY-PASS', 360, 40); g.fillText('UPS EXTERNO', 360, 64);
-  g.font = '15px system-ui, sans-serif';
-  const L = (...p) => { g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) g.lineTo(p[i], p[i + 1]); g.stroke(); };
-  L(30, 250, 640, 250); L(140, 250, 140, 130, 560, 130, 560, 250);                     // red, bypass por arriba, salida
-  L(220, 250, 220, 330, 300, 330); L(460, 250, 460, 330, 380, 330);                    // entrada y salida del sistema
-  g.strokeRect(300, 305, 80, 50); g.fillText('UPS', 340, 385);
-  for (const [x, y, t] of [[220, 250, 'CB8'], [350, 130, 'CB9'], [460, 250, 'CB10']]) { g.fillStyle = '#fff'; g.fillRect(x - 24, y - 12, 48, 24); g.fillStyle = '#000'; g.strokeRect(x - 24, y - 12, 48, 24); g.fillText(t, x, y + 5); }
-  g.fillText('ALIMENTACIÓN RED', 80, 235); g.fillText('SALIDA CARGAS', 600, 235);
-  g.fillText('PILOTO PRESENCIA', 140, 300); g.fillText('PILOTO SALIDA', 560, 300);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
-  const q = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34 * 400 / 720), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); q.position.set(0.0, -0.17, ZP + 0.0045); gab.add(q);
-  const lg = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1 / 3.85), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, toneMapped: false })); lg.position.set(0.105, -0.095, ZP + 0.0052); gab.add(lg);
 }
 
 /* puerta: bisagra en el borde izquierdo; delante van el logo, los pilotos, la cerradura y el cartel de peligro */

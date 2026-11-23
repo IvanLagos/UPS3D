@@ -14,10 +14,10 @@ import { iniciarUi, mostrarUi, refrescarUi, alternar, ordenarModo } from './ui.j
 import { gExt, iniciarExterno, activarExterno, aplicarExterno, refrescarExterno } from './externo.js';
 
 const CIRCUITOS = {
-  1: { ruta: 'circuito-1', boton: 'Circuito 1 · 2 UPS en serie (6 kVA)', titulo: 'UPS Modular 3D - 2 UPS de 6 kVA en serie', sub: 'Circuito 1 · RED → UPS A → UPS B → carga regulable (máx. 6 kVA) · 220–240 VAC' },
-  2: { ruta: 'circuito-2', boton: 'Circuito 2 · 2 UPS de 10 kVA con 2 STS', titulo: 'UPS Modular 3D - 2 UPS de 10 kVA con 2 STS', sub: 'Circuito 2 · 2 UPS cruzadas con 2 STS (fuentes A y B) y 2 cargas · 220–240 VAC' },
-  3: { ruta: 'circuito-3', boton: 'Circuito 3 · Paralelo con bypass de rodeo', titulo: 'UPS Modular 3D - Paralelo redundante', sub: 'Circuito 3 · 2 UPS de 10 kVA en paralelo redundante (N+1) con bypass de rodeo · 220–240 VAC' },
-  4: { ruta: 'circuito-4', boton: 'Circuito 4 · Paralelo con bypass de tablero externo', titulo: 'UPS Modular 3D - Paralelo redundante con tablero externo', sub: 'Circuito 4 · el circuito 3 más un tablero externo de bypass: entrada (CB8), bypass externo (CB9) y salida (CB10) · 220–240 VAC' },
+  1: { ruta: 'circuito-1', boton: 'Circuito 1 · 2 UPS en serie (6 kVA)', titulo: '2 UPS de 6 kVA en serie', sub: 'Circuito 1 · RED → UPS A → UPS B → carga regulable (máx. 6 kVA) · 220–240 VAC' },
+  2: { ruta: 'circuito-2', boton: 'Circuito 2 · 2 UPS de 10 kVA con 2 STS', titulo: '2 UPS de 10 kVA con 2 STS', sub: 'Circuito 2 · 2 UPS cruzadas con 2 STS (fuentes A y B) y 2 cargas · 220–240 VAC' },
+  3: { ruta: 'circuito-3', boton: 'Circuito 3 · Paralelo con bypass de rodeo', titulo: 'Paralelo redundante', sub: 'Circuito 3 · 2 UPS de 10 kVA en paralelo redundante (N+1) con bypass de rodeo · 220–240 VAC' },
+  4: { ruta: 'circuito-4', boton: 'Circuito 4 · Paralelo con bypass de tablero externo', titulo: 'Paralelo redundante con tablero externo', sub: 'Circuito 4 · el circuito 3 más un tablero externo de bypass: entrada (CB8), bypass externo (CB9) y salida (CB10) · 220–240 VAC' },
 };
 
 /* lo que ya está en la escena (circuito 3): se oculta con los otros circuitos; quedan siempre el piso, la cuadrícula y las luces */

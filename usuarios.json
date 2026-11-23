@@ -6,6 +6,11 @@
       "usuario": "ilagos",
       "acceso": "todos",
       "hash": "3f7eac175d6f6b82e16fec9779db6c153e05aed584d1529e13743f7afe7e5390"
+    },
+    {
+      "usuario": "sonacol",
+      "acceso": "sonacol",
+      "hash": "735e84232bf0fd824e38ddd41a8707b7eab99d93056d46dd43e8f2b0682d71d2"
     }
   ]
 }

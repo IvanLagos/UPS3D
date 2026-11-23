@@ -49,7 +49,7 @@ export function compute() {
   const del = selUps ? busUps : [];                               // las que alimentan la carga (el conmutador debe estar en 1)
   const nM = units.filter(x => x.present).length;
   const nB = units.reduce((a, x) => a + (x.banks && !x.stateFault ? x.nAct : 0), 0);
-  const cap = units.filter(x => x.inv).length * UPS_KW;
+  const cap = units.filter(x => x.inv && x.outClosed && !x.standby).length * UPS_KW;   // capacidad de las UPS que pueden entregar: con la salida de una abierta (o en stand by) solo quedan 10, no 20
 
   // bypass de rodeo: la red alimenta la carga directo, por fuera de las UPS.
   //  · Conmutador 1-0-2 (posición 2): siempre pasa por 0, así red e inversor nunca quedan unidos.

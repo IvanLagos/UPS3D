@@ -214,3 +214,9 @@ details.montaje[open]>summary{margin-bottom:10px}
 #cargando img{width:min(260px,70vw)}
 #cargando p{margin:0;font-size:14px;animation:cargando 1.2s ease-in-out infinite}
 @keyframes cargando{50%{opacity:.4}}
+
+/* tablero externo de bypass (circuito 4) en el unifilar del circuito 3 */
+#uni.ext #n_red,#uni.ext #n_red + text{display:none}
+#uni g.on .l,#uni .l.on{fill:var(--accent)}
+#uni .blk.ext{stroke:var(--warn);stroke-width:1.4}
+#uni.ext #rLoadG{display:none}

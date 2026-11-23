@@ -51,7 +51,7 @@ export function syncSwitches() {
   $('#btnModeRodeo').classList.toggle('on', !conm);
   $('#uniConm').style.display = conm ? '' : 'none';
   $('#uniRodeo').style.display = conm ? 'none' : '';
-  $('#uni').setAttribute('viewBox', conm ? '0 0 395 410' : '0 0 395 360');
+  $('#uni').setAttribute('viewBox', S.ext.on ? '-200 0 595 445' : conm ? '0 0 395 410' : '0 0 395 360');   // con el tablero externo (circuito 4) el diagrama es más ancho y alto
   $('#rowCB7').style.display = conm ? 'none' : '';
   $('#rowAuxRodeo').style.display = conm ? 'none' : '';
   $('#swAuxRodeo').checked = S.auxRodeo;

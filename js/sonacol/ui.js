@@ -129,14 +129,14 @@ function unifilar2(r) {
   svgSet('u2_rd0a', w.g, 'byp'); svgSet('u2_rd0b', w.rd0, 'byp'); svgSet('u2_rd1a', w.g, 'byp'); svgSet('u2_rd1b', w.rd1, 'byp');
   $('#u2_aux0').classList.toggle('on', SC.c2.auxSig[0]); $('#u2_aux1').classList.toggle('on', SC.c2.auxSig[1]);
   r.sts.forEach((t, j) => {
-    nodo(`u2_s${j}`, t.out, t.sel === 'B'); texto(`u2_s${j}_t`, t.sel ? `Fuente ${t.sel}${t.pref !== t.sel ? ' (respaldo)' : ''}` : 'Sin fuente');
+    nodo(`u2_s${j}`, t.out, t.sel === 'B'); $(`#u2_s${j}`).classList.toggle('fault', t.falla); texto(`u2_s${j}_t`, t.falla ? 'FALLA' : t.sel ? `Fuente ${t.sel}${t.pref !== t.sel ? ' (respaldo)' : ''}` : 'Sin fuente');
     {                                                                                // la barra del conmutador apunta a la fuente en uso
       const [xa, xb, px] = j === 0 ? [75, 145, 110] : [320, 270, 295], l = $(`#u2_sw${j}_l`);
       const x2 = t.sel === 'A' ? xa : t.sel === 'B' ? xb : px, y2 = t.sel ? YP + 38 : YP + 46;
       l.setAttribute('x2', x2); l.setAttribute('y2', y2);
       l.classList.toggle('on', t.sel === 'A' && t.out); l.classList.toggle('byp', t.sel === 'B' && t.out);
       $(`#u2_sw${j}_a`).classList.toggle('live', t.a); $(`#u2_sw${j}_b`).classList.toggle('live', t.b);
-      $(`#c2_ps${j}A`).classList.toggle('on', t.sel === 'A'); $(`#c2_ps${j}B`).classList.toggle('on', t.sel === 'B'); $(`#c2_fs${j}`).textContent = t.sel ? `Fuente ${t.sel}${t.pref !== t.sel ? ' (por respaldo)' : ''}` : 'Sin fuente';
+      $(`#c2_ps${j}A`).classList.toggle('on', t.sel === 'A'); $(`#c2_ps${j}B`).classList.toggle('on', t.sel === 'B'); $(`#c2_fs${j}`).textContent = t.falla ? 'Falla' : t.sel ? `Fuente ${t.sel}${t.pref !== t.sel ? ' (por respaldo)' : ''}` : 'Sin fuente'; $(`#c2_fst${j}`).textContent = t.falla ? `STS-${j + 1} en falla · restablecer` : `Falla STS-${j + 1}`; $(`#c2_fst${j}`).classList.toggle('bad', t.falla);
     }
     $(`#u2_pa${j}`).classList.toggle('live', t.sel === 'A'); $(`#u2_pb${j}`).classList.toggle('live', t.sel === 'B');
     svgSet(`u2_w_s${j}`, t.out, t.sel === 'B' ? 'byp' : ''); svgSet(`u2_w_l${j}`, t.on, t.byp ? (j ? c1 : c0) : t.sel === 'B' ? 'byp' : '');
@@ -214,7 +214,7 @@ const PANEL = `
   </div>
   <div class="col">
     ${comandos(2)}
-    <section><h2>Simular fallas</h2><div class="cmd"><span class="note">UPS</span><div class="row"><button class="sm" id="c2_f0">Falla UPS 1</button><button class="sm" id="c2_f1">Falla UPS 2</button></div></div></section>
+    <section><h2>Simular fallas</h2><div class="cmd"><span class="note">UPS</span><div class="row"><button class="sm" id="c2_f0">Falla UPS 1</button><button class="sm" id="c2_f1">Falla UPS 2</button></div></div><div class="cmd"><span class="note">STS</span><div class="row"><button class="sm" id="c2_fst0">Falla STS-1</button><button class="sm" id="c2_fst1">Falla STS-2</button></div></div></section>
     <section><h2>Estado</h2>${metricas(2)}<p class="note">Cada STS prefiere su fuente A y pasa a la B si la A se pierde. Simulación acelerada: 1 s real = 1 min.</p></section>
   </div>
 </div></div>`;
@@ -236,6 +236,7 @@ export function iniciarUi(alCambiar) {
     [0, 1].forEach(u => $(`#c${n}_f${u}`).addEventListener('click', () => { s.fault[u] = !s.fault[u]; cambio(); }));
     [0, 1].forEach(u => { $(`#c${n}_inv${u}`).addEventListener('click', () => { ordenarModo(n, u, false); cambio(); }); $(`#c${n}_byp${u}`).addEventListener('click', () => { ordenarModo(n, u, true); cambio(); }); });
   }
+  [0, 1].forEach(j => $(`#c2_fst${j}`).addEventListener('click', () => { SC.c2.faultSts[j] = !SC.c2.faultSts[j]; toast(SC.c2.faultSts[j] ? `STS-${j + 1} en FALLA: deja de entregar (la carga ${j + 1} queda sin energía salvo por su bypass)` : `STS-${j + 1} restablecido`); cambio(); }));
   for (const n of [1, 2]) {
     $(`#c${n}_front`).addEventListener('change', e => setPuerta(n, 'front', !e.target.checked));
     $(`#c${n}_rear`).addEventListener('change', e => setPuerta(n, 'rear', !e.target.checked));
@@ -326,13 +327,14 @@ function alarmas2(r) {
   [0, 1].forEach(i => { if (Q[9 + i]) alarma(al, r.gen ? `Rodeo de la UPS ${i + 1} cerrado (Q${9 + i}): la red alimenta directo la salida de la UPS ${i + 1} (aguas abajo de Q${2 * i + 2}), por fuera de la UPS ${i + 1}` : `Rodeo de la UPS ${i + 1} cerrado (Q${9 + i}), pero no hay tensión de red`, r.gen ? '' : 'bad'); });
   if (r.sinRedund) alarma(al, `Redundancia perdida: las cargas suman ${r.encendida.toFixed(1)} kVA, más de lo que puede sostener una sola UPS (${KVA[2]} kVA). Si una UPS deja de entregar, la otra quedará en sobrecarga`, 'bad');
   r.sts.forEach((t, j) => {
+    if (t.falla) alarma(al, `FALLA en el STS-${j + 1}: fuera de servicio, la carga ${j + 1} ${t.byp ? 'sigue por su bypass' : 'quedó sin energía (cierre su bypass Q' + (7 + j) + ')'}`, 'bad');
     if (t.sel === 'B') alarma(al, t.pref === 'B' ? `STS-${j + 1} en su fuente B (UPS ${2 - j}) por transferencia manual` : `STS-${j + 1} transfirió a su fuente B (UPS ${2 - j}): perdió la fuente A`, '');
     if (t.sel === 'A' && t.pref === 'B') alarma(al, `STS-${j + 1} volvió a su fuente A: la fuente B no está disponible`, '');
     if (!Q[11 + 2 * j] && r.gen) alarma(al, `Entrada A del STS-${j + 1} abierta (Q${11 + 2 * j}): el STS depende de su fuente B`, t.b ? '' : 'bad');
     if (!Q[12 + 2 * j] && r.gen) alarma(al, `Entrada B del STS-${j + 1} abierta (Q${12 + 2 * j}): el STS pierde su fuente de respaldo`, '');
     if (t.byp) alarma(al, `Bypass del STS-${j + 1} cerrado (Q${7 + j}): la carga ${j + 1} cuelga directo de la UPS ${j + 1}, por fuera del STS-${j + 1}`, '');
     if (t.conflicto) alarma(al, `Bypass del STS-${j + 1} cerrado mientras el STS entrega desde la UPS ${2 - j}: dos salidas de UPS distintas unidas sin sincronizar. Abra Q${5 + j} o el bypass`, 'bad');
-    if (t.sel === null && !t.byp) alarma(al, `STS-${j + 1} sin fuentes: la carga ${j + 1} quedó sin energía`, 'bad');
+    if (t.sel === null && !t.byp && !t.falla) alarma(al, `STS-${j + 1} sin fuentes: la carga ${j + 1} quedó sin energía`, 'bad');
     if (!t.q && !t.byp) alarma(al, `Salida STS-${j + 1} abierta (Q${5 + j}): la carga ${j + 1} quedó sin energía`, 'bad');
   });
   return al;

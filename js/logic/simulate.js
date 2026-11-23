@@ -32,6 +32,12 @@ export function simulate(dt) {
     syncSwitches();
   }
 
+  if (E.extFalla) {                    // bypass externo cerrado con las UPS en inversor (sin pasar por el contacto auxiliar): red e inversor sin sincronizar
+    E.units.forEach((x, u) => { if (x.present) { S.fault[u] = true; S.standby[u] = false; } });
+    toast('Bypass externo cerrado con las UPS en inversor: red e inversor sin sincronizar. Ambas UPS entran en FALLA');
+    syncSwitches();
+  }
+
   powerMods.forEach((m, u) => { if (m.userData.state !== 'in') { S.risk[u] = false; S.fault[u] = false; } });
 
   E.units.forEach((x, u) => {

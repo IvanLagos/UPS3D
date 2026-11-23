@@ -24,7 +24,7 @@ export const SC = {
   activo: 1,
   mains: true,
   c1: { Q: [true, true, true, true, true, false, false], cmd: [false, false], auxSig: [false, false], auxForzo: [false, false], fault: [false, false], byp: [false, false], soc: [100, 100], load: 3 },
-  c2: { Q: [true, true, true, true, true, true, true, false, false, false, false, true, true, true, true], cmd: [false, false], auxSig: [false, false], auxForzo: [false, false], pref: ['A', 'A'], fault: [false, false], byp: [false, false], soc: [100, 100], load: [5, 5] },
+  c2: { Q: [true, true, true, true, true, true, true, false, false, false, false, true, true, true, true], cmd: [false, false], auxSig: [false, false], auxForzo: [false, false], pref: ['A', 'A'], fault: [false, false], faultSts: [false, false], byp: [false, false], soc: [100, 100], load: [5, 5] },
 };
 
 /* Contacto auxiliar adelantado de cada rodeo (circuito 1: Q5 = rodeo de la UPS A, Q6 = rodeo de la UPS B; circuito 2: Q9 = rodeo de la UPS 1, Q10 = rodeo de la UPS 2):
@@ -102,9 +102,10 @@ export function calc2() {
     entrega = u.map((x, i) => x.vivo && Q[2 * i + 2]);                         // la UPS i entrega por sí misma a su salida (aguas abajo de Q2 / Q4)
     const sale = [0, 1].map(i => entrega[i] || !!(gen && Q[9 + i]));           // salida i disponible: de la UPS o de su rodeo
     sts = [0, 1].map(j => {                                                    // el STS j prefiere su fuente A (la UPS j); cada entrada tiene su automático (Q11…Q14)
-      const a = sale[j] && Q[11 + 2 * j], b = sale[1 - j] && Q[12 + 2 * j], pref = s.pref[j];
+      const falla = !!s.faultSts[j];                                          // STS en falla: no transfiere ni entrega (la carga solo se alimenta por su bypass)
+      const a = !falla && sale[j] && Q[11 + 2 * j], b = !falla && sale[1 - j] && Q[12 + 2 * j], pref = s.pref[j];
       const sel = pref === 'A' ? (a ? 'A' : b ? 'B' : null) : (b ? 'B' : a ? 'A' : null);   // usa la fuente preferida; si no está, la otra
-      return { a, b, pref, sel };
+      return { a, b, pref, sel, falla };
     });
     const nuevo = [0, 0];
     asign = [0, 0];
@@ -142,6 +143,7 @@ export function calc2() {
 /** Transferencia manual del STS j (0 o 1) a la fuente `destino` ('A' o 'B'); sin destino pasa a la otra fuente. Solo si la fuente de destino está disponible. */
 export function conmutarSts(j, destino = null) {
   const t = calc2().sts[j], d = destino || (t.sel === 'A' ? 'B' : 'A');
+  if (t.falla) { toast(`STS-${j + 1} en falla: no puede transferir`); return; }
   if (SC.c2.pref[j] === d && t.sel === d) return;
   if (!(d === 'A' ? t.a : t.b)) { toast(`STS-${j + 1}: la fuente ${d} no está disponible, no puede transferir`); return; }
   SC.c2.pref[j] = d;

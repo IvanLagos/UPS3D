@@ -70,7 +70,7 @@ const applyBoardWiring = applyCircuito;
 function applyUnifilar() {
   const { units, out, src, gen } = E;
   const anyBypass = src === 'bypass';
-  svgSet('w_g1', S.mains, 'byp'); svgSet('w_g2', gen, 'byp'); svgSet('w_bus', gen, 'byp');
+  svgSet('w_g1', E.redIn, 'byp'); svgSet('w_g2', gen, 'byp'); svgSet('w_bus', gen, 'byp');
   units.forEach((x, u) => {
     const n = u + 1, norm = x.mode === 'normal' || x.mode === 'bateria', byp = x.mode === 'bypass';
     const batFlow = x.batOk || x.charging;
@@ -114,7 +114,7 @@ function applyUnifilar() {
     svgSet('r_r1', gen, 'byp'); svgSet('r_r2', rod, 'byp');
     svgSet('r_ob', E.del.length > 0 || rod, byColor);
     svgSet('r_os', E.del.length > 0 || rod, byColor);
-    svgSet('r_ol', out, byColor);
+    svgSet('r_ol', E.nodoSalida, byColor);
     nodeSet('r_load', out, anyBypass || (rod && !E.del.length));
   }
   document.querySelectorAll('#uni .brk').forEach(g => {
@@ -178,7 +178,7 @@ export function applyLive() {
   drawScreen();
   drawLoad();
   drawBatteries();
-  if (!window.__sonacolActivo || window.__sonacolActivo === 3) $('#avisoRedund').hidden = !E.redundancyLost;   // en SONACOL el letrero lo maneja el circuito que se está viendo
+  if (!window.__sonacolActivo || window.__sonacolActivo >= 3) $('#avisoRedund').hidden = !E.redundancyLost;   // en SONACOL el letrero lo maneja el circuito que se está viendo
 }
 
 /** Pantalla de la carga: % sobre la capacidad de las UPS que entregan (20 kW si no hay inversores), potencia y aviso de sobrecarga. */

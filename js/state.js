@@ -10,6 +10,8 @@ export const S = {
   rodeoCmd: false,                               // orden que se dio a la palanca del CB7 (las dos palancas, azul y verde, se mueven juntas desde que se la da)
   auxSenal: false,                               // la señal del contacto auxiliar está activa (llega a la UPS 1 un instante antes de cerrar el CB7 y se va un instante después de abrirlo)
   auxForzo: false,                               // el contacto auxiliar fue quien pasó las UPS de inversor a bypass (al soltarse las devuelve a inversor)
+  /* tablero externo de bypass (solo circuito 4 de SONACOL): entrada aguas arriba de CB5, bypass externo (de la red aguas arriba de CB5 a la carga, aguas abajo de CB6 y de la salida) y salida (de CB6 a la carga) */
+  ext: { on: false, in: true, byp: false, out: true, cmd: false, auxSig: false, auxForzo: false },
   tripped: [false, false],                       // automático de salida disparado por sobrecorriente (solo con interruptor de rodeo)
   sel: 1,                                        // conmutador bypass: 1 = UPS, 0 = corte, 2 = red
   byp: [false, false],                           // UPS en bypass estático (por UPS, pero comunicadas)

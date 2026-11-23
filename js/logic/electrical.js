@@ -5,7 +5,9 @@ import { CB_IN, CB_OUT, UPS_KW, OVERLOAD_CUT } from '../config.js';
 import { powerMods, battMods } from '../model/modules.js';
 
 export function compute() {
-  const gen = S.mains && S.CB.CB5;                                // tensión aguas abajo del general
+  const ext = S.ext;                                              // tablero externo de bypass (solo circuito 4)
+  const redIn = S.mains && (!ext.on || ext.in);                   // la red llega al general solo si el automático de entrada del tablero externo está cerrado
+  const gen = redIn && S.CB.CB5;                                  // tensión aguas abajo del general
   const conm = S.bypassMode === 'conmutador';                     // conmutador 1-0-2 (si no, interruptor CB7 de la configuración anterior)
   const selUps = !conm || S.sel === 1;                            // la carga cuelga de las UPS (con el conmutador, solo en la posición 1)
   const units = [0, 1].map(u => {
@@ -57,11 +59,17 @@ export function compute() {
   const rodeo = gen && (conm ? S.sel === 2 : S.CB.CB7);
   const rodeoFalla = !conm && rodeo && del.some(x => x.mode === 'normal' || x.mode === 'bateria');
 
-  const out = (del.length > 0 || rodeo) && S.CB.CB6;              // la carga recibe energía si hay UPS entregando (o el rodeo) y la salida general cerrada
+  const outSis = (del.length > 0 || rodeo) && S.CB.CB6;           // salida del sistema: hay UPS entregando (o el rodeo) y la salida general (CB6) cerrada
+  const byExt = ext.on && ext.byp && redIn;                       // bypass externo: lleva la red de aguas abajo de CB8 a aguas arriba de CB10 (por fuera de CB5, de las UPS y de CB6)
+  const nodoSalida = outSis || byExt;                             // tensión aguas arriba de CB10
+  const cargaSis = outSis && (!ext.on || ext.out);                // la carga recibe lo que entrega el sistema si CB10 (con tablero externo) está cerrada
+  const porExt = byExt && ext.out;                                // ...o lo que llega por el bypass externo, también a través de CB10
+  const out = cargaSis || porExt;                                 // la carga recibe energía por el sistema o por el bypass externo
+  const extFalla = byExt && outSis && del.some(x => x.mode === 'normal' || x.mode === 'bateria');   // bypass externo cerrado con las UPS entregando en inversor: red e inversor sin sincronizar
   const src = !del.length ? (rodeo ? 'rodeo' : 'none') : del.some(x => x.mode === 'normal') ? 'normal' : del.some(x => x.mode === 'bateria') ? 'bateria' : 'bypass';
   const modes = units.filter(x => x.present && !x.standby && !x.stateFault && !x.stateOff).map(x => x.mode);
   const mode0 = !modes.length ? (units.some(x => x.present && x.stateOff && !x.stateFault) ? 'apagada' : 'none') : modes.every(m => m === modes[0]) ? modes[0] : 'mixto';
-  const mode = rodeo && !del.length ? 'rodeo' : mode0;
+  const mode = porExt && !cargaSis ? 'extbyp' : rodeo && !del.length ? 'rodeo' : mode0;
 
-  return { gen, units, del, nM, nB, cap, overload, overloadSuave: overload && units.some(x => x.useInv), redundancyLost, overloadBypass, src, mode, out, inv: units.some(x => x.inv), bypassFeed: units.some(x => x.bypassFeed), busUps, rodeo, rodeoFalla, conm, selUps, sel: S.sel };
+  return { gen, units, del, nM, nB, cap, overload, overloadSuave: overload && units.some(x => x.useInv), redundancyLost, overloadBypass, src, mode, out, inv: units.some(x => x.inv), bypassFeed: units.some(x => x.bypassFeed), busUps, rodeo, rodeoFalla, conm, selUps, sel: S.sel, extByp: byExt, extCarga: porExt, extFalla, outSis, nodoSalida, cargaSis, redIn };
 }

@@ -365,8 +365,8 @@ function pantallaSts(scr, n, t) {
   const { ctx: g, tex } = scr;
   g.fillStyle = '#06120c'; g.fillRect(0, 0, scr.w, scr.h);
   g.textBaseline = 'top'; g.font = 'bold 21px monospace';
-  g.fillStyle = t.sel === null ? '#ff6b6b' : t.sel === 'A' ? '#3dff95' : '#ffc233';
-  g.fillText(`STS-${n} ${t.sel === null ? 'SIN FUENTE' : 'FUENTE ' + t.sel}`, 10, 8);
+  g.fillStyle = t.sel === null || t.falla ? '#ff6b6b' : t.sel === 'A' ? '#3dff95' : '#ffc233';
+  g.fillText(`STS-${n} ${t.falla ? 'FALLA' : t.sel === null ? 'SIN FUENTE' : 'FUENTE ' + t.sel}`, 10, 8);
   g.font = '19px monospace'; g.fillStyle = '#9fe9bf';
   g.fillText(`A:${t.a ? 'OK' : '--'}  B:${t.b ? 'OK' : '--'}`, 10, 38);
   g.fillText(`CARGA ${t.carga.toFixed(1)} kVA`, 10, 64);
@@ -408,7 +408,7 @@ export function aplicar2(r) {
   [[st1, r.sts[0]], [st2, r.sts[1]]].forEach(([s, t]) => {
     setLed(s.ledA, t.sel === 'A' ? 0x22ff88 : t.a ? 0x1d6b44 : 0);
     setLed(s.ledB, t.sel === 'B' ? 0xffc233 : t.b ? 0x6b5412 : 0);
-    setLed(s.ledS, t.out ? 0x22ff88 : 0);
+    setLed(s.ledS, t.falla ? 0xff3b3b : t.out ? 0x22ff88 : 0);
   });
   k2.s0.set(w.s0, !w.bl0 && r.sts[0].sel === 'B' ? COL.amber : COL.green); k2.s1.set(w.s1, !w.bl1 && r.sts[1].sel === 'B' ? COL.amber : COL.green);
 }

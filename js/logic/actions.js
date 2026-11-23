@@ -124,6 +124,49 @@ export function setRodeo(closed) {
   }
   syncSwitches();
 }
+/* ---------- tablero externo de bypass (circuito 4) ----------
+   Entrada (aguas arriba de CB5), salida (de CB6 a la carga) y bypass externo (de aguas abajo de CB8 a aguas arriba de CB10). El bypass externo lleva su contacto
+   auxiliar adelantado, como el CB7: antes de cerrarlo pasa las UPS a bypass estático (comunicadas), así la salida queda sincronizada con la red. */
+let extT = null;
+export function setExtIn(closed) {
+  S.ext.in = closed;
+  toast(`Tablero externo · entrada (CB8): ${closed ? 'CERRADA, la red llega al general' : 'ABIERTA, el sistema queda sin red'}`);
+  syncSwitches();
+}
+export function setExtOut(closed) {
+  S.ext.out = closed;
+  toast(`Tablero externo · salida (CB10): ${closed ? 'CERRADA' : 'ABIERTA, la salida del sistema queda desconectada de la carga'}`);
+  syncSwitches();
+}
+export function setExtBypass(closed) {
+  if (extT) return;                                                          // mientras corre el adelanto no admite otra orden
+  const e = S.ext;
+  if (closed === e.byp) return;
+  e.cmd = closed;                                                            // las dos palancas (bypass y contacto auxiliar) se mueven juntas desde que se da la orden
+  if (closed) {
+    e.auxSig = true;
+    if (E.units && E.units.some(x => x.present)) {
+      if (!S.byp.some(Boolean)) e.auxForzo = true;
+      applyBypass(true);
+    }
+    toast('Contacto auxiliar del bypass externo (CB9): cierra antes y pasa las UPS a bypass estático (la UPS 1 avisa a la UPS 2)');
+    extT = setTimeout(() => {
+      extT = null; e.byp = true;
+      toast('Bypass externo cerrado con las UPS ya en bypass estático: red y salida sincronizadas, sin diferencia de potencia');
+      syncSwitches();
+    }, ADELANTO_MS);
+  } else {
+    e.byp = false;
+    toast('Bypass externo (CB9) abierto. El contacto auxiliar abre unas milésimas después y las UPS vuelven a inversor');
+    extT = setTimeout(() => {
+      extT = null; e.auxSig = false;
+      if (e.auxForzo) { e.auxForzo = false; applyBypass(false); }
+      syncSwitches();
+    }, ADELANTO_MS);
+  }
+  syncSwitches();
+}
+
 /** Instala o retira el contacto auxiliar adelantado del CB7. */
 export function setAuxRodeo(on) {
   if (!on && (S.CB.CB7 || rodeoT)) { toast('Abra el CB7 antes de retirar el contacto auxiliar.'); syncSwitches(); return; }

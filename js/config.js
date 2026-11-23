@@ -32,7 +32,7 @@ export const breakerName = id => ALL_CB.find(b => b.id === id).name.toLowerCase(
 
 export const MODE_TXT = {
   rodeo: 'Bypass de rodeo', falla: 'En falla', normal: 'Normal (inversor)', bateria: 'Respaldo baterías',
-  bypass: 'Bypass', transfer: 'Transfiriendo', apagada: 'UPS apagada', mixto: 'Mixto', none: 'Sin salida',
+  bypass: 'Bypass', extbyp: 'Bypass externo', transfer: 'Transfiriendo', apagada: 'UPS apagada', mixto: 'Mixto', none: 'Sin salida',
 };
 
 /* Capacidad del modelo provisional IUiR-10KW */

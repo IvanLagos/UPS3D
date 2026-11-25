@@ -1,7 +1,7 @@
 """Cuentas de acceso y su API (ingresar, sesión y gestión de usuarios). Solo usa la biblioteca estándar de Python.
 
 Las cuentas viven en usuarios.json: { "sal", "iter", "usuarios": [ { "usuario", "acceso", "hash" } ] }, donde hash es la huella PBKDF2-SHA256
-de «usuario + salto de línea + clave» (nunca se guarda la clave). acceso: 'oxiquim', 'sonacol' o 'todos' (elige cliente, usa el editor y gestiona cuentas).
+de «usuario + salto de línea + clave» (nunca se guarda la clave). acceso: 'oxiquim', 'sonacol', 'todos' (elige cliente y usa el editor de tableros) o 'admin' (lo mismo que 'todos' y además gestiona las cuentas).
 
 Dónde se guardan:
   · Local (sin GH_TOKEN): en el archivo usuarios.json de esta carpeta (o el de la variable USUARIOS_ARCHIVO).
@@ -30,7 +30,7 @@ GH_RAMA = os.environ.get('GH_RAMA', 'main')
 GH_RUTA = 'usuarios.json'
 SECRETO = (os.environ.get('SESION_SECRETO') or secrets.token_hex(32)).encode()
 DURACION = 12 * 3600                                   # una sesión dura 12 horas
-ACCESOS = ('oxiquim', 'sonacol', 'todos')
+ACCESOS = ('oxiquim', 'sonacol', 'todos', 'admin')
 NOMBRE_OK = re.compile(r"^[^\s'\"\\]{1,40}$")
 
 _cerrojo = threading.Lock()
@@ -229,14 +229,14 @@ def _atender(h, metodo, ruta):
 
     if not ruta.startswith('/api/usuarios'):
         return _responder(h, 404, {'error': 'No existe'})
-    if not ses or ses['acceso'] != 'todos':
-        return _responder(h, 403, {'error': 'Solo el perfil de acceso total gestiona las cuentas'})
+    if not ses or ses['acceso'] != 'admin':
+        return _responder(h, 403, {'error': 'Solo el perfil administrador gestiona las cuentas'})
 
     if ruta == '/api/usuarios' and metodo == 'GET':
         return _responder(h, 200, {'usuarios': [{'usuario': u['usuario'], 'acceso': u['acceso']} for u in _datos['usuarios']]})
 
     def otro_admin(lista, quien):
-        return any(u['acceso'] == 'todos' and u is not quien for u in lista)
+        return any(u['acceso'] == 'admin' and u is not quien for u in lista)
 
     if ruta == '/api/usuarios' and metodo == 'POST':
         d = _json(h)
@@ -251,8 +251,8 @@ def _atender(h, metodo, ruta):
 
         def poner(lista):
             previo = next((u for u in lista if u['usuario'] == usuario), None)
-            if previo and previo['acceso'] == 'todos' and acceso != 'todos' and not otro_admin(lista, previo):
-                raise Rechazo(400, 'No se puede quitar el acceso total al único administrador')
+            if previo and previo['acceso'] == 'admin' and acceso != 'admin' and not otro_admin(lista, previo):
+                raise Rechazo(400, 'No se puede quitar el perfil administrador al único administrador')
             if previo:
                 lista[lista.index(previo)] = nuevo
             else:
@@ -277,7 +277,7 @@ def _atender(h, metodo, ruta):
             objetivo = next((u for u in lista if u['usuario'] == usuario), None)
             if not objetivo:
                 raise Rechazo(404, 'No existe ese usuario')
-            if objetivo['acceso'] == 'todos' and not otro_admin(lista, objetivo):
+            if objetivo['acceso'] == 'admin' and not otro_admin(lista, objetivo):
                 raise Rechazo(400, 'No se puede quitar al único administrador')
             lista.remove(objetivo)
 

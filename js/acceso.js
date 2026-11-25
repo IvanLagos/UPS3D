@@ -3,6 +3,7 @@ import { ingresar, sesionValida, cerrarSesion } from './verificar.js';
 import { CLIENTES, rutaDe, clienteDeRuta } from './clientes.js';
 
 const $ = s => document.querySelector(s);
+const CON_TODO = ['todos', 'admin'];                                    // perfiles que ven todos los clientes y el editor de tableros
 
 /** Cerrar sesión: olvida la clave y vuelve a la pantalla de acceso. */
 function salir() {
@@ -11,17 +12,19 @@ function salir() {
   location.reload();
 }
 document.querySelectorAll('.cerrar-sesion').forEach(b => b.addEventListener('click', salir));
-/** Entra según el acceso del usuario: el de un cliente va directo a su interfaz (sea cual sea el enlace); el de acceso total va al cliente del enlace o elige. */
+/** Entra según el acceso del usuario: el de un cliente va directo a su interfaz (sea cual sea el enlace); «todos» y «admin» van al cliente del enlace o eligen. */
 function entrar(acceso) {
   window.__acceso = acceso;
-  if (acceso !== 'todos') {                                                       // usuario de un solo cliente: sin elección, sin cambiar de cliente ni editor de tableros
+  if (!CON_TODO.includes(acceso)) {                                                       // usuario de un solo cliente: sin elección, sin cambiar de cliente ni editor de tableros
     document.body.classList.add('un-cliente');
     const c = CLIENTES[acceso];
     if (clienteDeRuta()?.id !== c.id) history.replaceState(null, '', location.pathname + location.search + rutaDe(c));
     abrir(c); return;
   }
-  $('#btnCuentas').hidden = false;                                                // el perfil de acceso total gestiona las cuentas
-  $('#btnCuentas').addEventListener('click', async () => (await import('./cuentas.js')).abrirCuentas());
+  if (acceso === 'admin') {                                                       // solo el administrador gestiona las cuentas
+    $('#btnCuentas').hidden = false;
+    $('#btnCuentas').addEventListener('click', async () => (await import('./cuentas.js')).abrirCuentas());
+  }
   const c = clienteDeRuta();
   if (c) abrir(c); else elegirCliente();
 }
@@ -45,7 +48,8 @@ function elegirCliente() {
   t.href = 'tablero.html'; t.className = 'cliente-op herramienta';
   t.innerHTML = '<strong>TABLERO ELÉCTRICO</strong><small>Editor para diseñar circuitos de tableros</small>';
   lista.appendChild(t);
-  const k = document.createElement('button');                             // gestión de cuentas, solo para el perfil de acceso total
+  if (window.__acceso !== 'admin') return;
+  const k = document.createElement('button');                             // gestión de cuentas, solo para el administrador
   k.type = 'button'; k.className = 'cliente-op herramienta';
   k.innerHTML = '<strong>CUENTAS</strong><small>Crear usuarios, cambiar claves y quitar accesos</small>';
   k.addEventListener('click', async () => (await import('./cuentas.js')).abrirCuentas());

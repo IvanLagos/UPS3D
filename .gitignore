@@ -13,3 +13,6 @@ dist/
 *.log
 *.tmp
 *.bak
+
+# Python
+__pycache__/

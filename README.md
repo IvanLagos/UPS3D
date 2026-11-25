@@ -102,8 +102,8 @@ Las acciones modifican `S`; `simulate(dt)` hace evolucionar `S` con el tiempo; `
 
 ## Usuarios y claves
 
-La página pide **usuario y clave** y los verifica el servidor (`cuentas_api.py`, dentro de `servidor.py`). Cada usuario entra directo a su cliente: acceso `oxiquim`, `sonacol` o `todos`
-(este último elige cliente, usa el editor de tableros y gestiona las cuentas desde el botón **Cuentas**; los cambios valen al instante para todos).
+La página pide **usuario y clave** y los verifica el servidor (`cuentas_api.py`, dentro de `servidor.py`). Cada usuario entra directo a su cliente: acceso `oxiquim`, `sonacol`, `todos`
+(elige cliente y usa el editor de tableros) o `admin` (lo mismo y además gestiona las cuentas desde el botón **Cuentas**; los cambios valen al instante para todos).
 Las cuentas están en `usuarios.json` (usuario, acceso y huella PBKDF2 de «usuario + clave»; nunca la clave). El servidor no entrega ese archivo ni los `.py`.
 
 - **Primer administrador (o trabajo local):** `python herramientas/crear-usuario.py` (pide usuario, clave sin mostrarla y acceso).

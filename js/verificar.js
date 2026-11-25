@@ -18,7 +18,7 @@ export async function ingresar(usuario, clave) {
   } catch (err) { return { error: 'No se pudo conectar con el servidor' }; }
 }
 
-/** Acceso de la sesión de esta pestaña ('oxiquim', 'sonacol' o 'todos'), o null si no ingresó o ya venció. */
+/** Acceso de la sesión de esta pestaña ('oxiquim', 'sonacol', 'todos' o 'admin'), o null si no ingresó o ya venció. */
 export async function sesionValida() {
   if (!token()) return null;
   for (let intento = 0; intento < 4; intento++) {          // ante un fallo pasajero (red o hosting) se reintenta: solo un rechazo del servidor pide ingresar de nuevo

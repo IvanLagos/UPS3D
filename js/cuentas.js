@@ -1,8 +1,8 @@
-/* Gestión de cuentas (solo para el usuario con acceso total): crear usuarios, cambiar claves y accesos, y quitar usuarios.
+/* Gestión de cuentas (solo para el perfil administrador): crear usuarios, cambiar claves y accesos, y quitar usuarios.
    Todo se guarda en el servidor (api/usuarios) y vale al instante para todos; aquí nunca se ve ni se guarda ninguna clave. */
 import { cabeceras } from './verificar.js';
 
-const ACCESOS = { oxiquim: 'OXIQUIM', sonacol: 'SONACOL', todos: 'Todos (administrador)' };
+const ACCESOS = { oxiquim: 'OXIQUIM', sonacol: 'SONACOL', todos: 'Todos los clientes', admin: 'Administrador (todo y cuentas)' };
 const $ = (s, r = document) => r.querySelector(s);
 
 let modal = null;

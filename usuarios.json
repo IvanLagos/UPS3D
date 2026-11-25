@@ -4,7 +4,7 @@
   "usuarios": [
     {
       "usuario": "ilagos",
-      "acceso": "todos",
+      "acceso": "admin",
       "hash": "3f7eac175d6f6b82e16fec9779db6c153e05aed584d1529e13743f7afe7e5390"
     },
     {

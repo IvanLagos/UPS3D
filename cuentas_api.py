@@ -19,6 +19,7 @@ import secrets
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 RAIZ = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +34,8 @@ ACCESOS = ('oxiquim', 'sonacol', 'todos')
 NOMBRE_OK = re.compile(r"^[^\s'\"\\]{1,40}$")
 
 _cerrojo = threading.Lock()
+FRESCURA = 10                                          # segundos que vale lo leído de GitHub antes de volver a consultarlo
+_leido = 0.0
 _datos = {'sal': 'ups3d-fica', 'iter': 200000, 'usuarios': []}
 _fallos = {}                                           # ip -> instantes de intentos fallidos (límite de intentos)
 
@@ -54,36 +57,86 @@ def _leer_local():
         return json.load(f)
 
 
+def _remoto():
+    """Cuentas guardadas en GitHub ahora mismo, y la versión (sha) del archivo."""
+    r = _gh('GET')
+    return json.loads(base64.b64decode(r['content']).decode('utf-8')), r['sha']
+
+
 def cargar():
-    """Lee las cuentas: de GitHub si hay token (es la fuente de verdad), si no del archivo local."""
-    global _datos
+    """Lee las cuentas al arrancar: de GitHub si hay token (es la fuente de verdad), si no (o si falla) del archivo local."""
+    global _datos, _leido
     if GH_TOKEN:
         try:
-            r = _gh('GET')
-            _datos = json.loads(base64.b64decode(r['content']).decode('utf-8'))
+            _datos, _ = _remoto()
+            _leido = time.time()
             return
         except Exception as e:                          # sin GitHub: se usa la copia desplegada
-            print('Aviso: no se pudo leer usuarios.json de GitHub:', e)
+            print('Aviso: no se pudo leer usuarios.json de GitHub:', _motivo(e))
     try:
         _datos = _leer_local()
     except Exception as e:
         print('Aviso: no se pudo leer usuarios.json:', e)
 
 
-def _guardar(nuevos):
-    """Guarda las cuentas (GitHub o archivo local); si falla, lanza la excepción y no cambia nada."""
-    global _datos
-    texto = json.dumps(nuevos, ensure_ascii=False, indent=2) + '\n'
-    if GH_TOKEN:
-        sha = _gh('GET')['sha']
-        _gh('PUT', {'message': 'Actualiza las cuentas de acceso [skip render]', 'branch': GH_RAMA, 'sha': sha,
-                    'content': base64.b64encode(texto.encode('utf-8')).decode()})
-    else:
-        tmp = ARCHIVO + '.tmp'
-        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
-            f.write(texto)
-        os.replace(tmp, ARCHIVO)
-    _datos = nuevos
+def refrescar():
+    """Vuelve a leer GitHub si lo leído tiene más de FRESCURA segundos: así varios servidores comparten las mismas cuentas.
+    Si falla, se sigue con lo que ya había en memoria."""
+    global _datos, _leido
+    if not GH_TOKEN or time.time() - _leido < FRESCURA:
+        return
+    _leido = time.time()
+    try:
+        _datos, _ = _remoto()
+    except Exception as e:
+        print('Aviso: no se pudo actualizar usuarios.json desde GitHub:', _motivo(e))
+
+
+class Rechazo(Exception):
+    """Cambio de cuentas que no se puede hacer (código HTTP y motivo)."""
+    def __init__(self, codigo, motivo):
+        super().__init__(motivo)
+        self.codigo = codigo
+
+
+def modificar(cambio):
+    """Aplica `cambio(lista)` (modifica la lista de usuarios o lanza Rechazo) sobre las cuentas MÁS RECIENTES y las guarda.
+    Con GitHub lee y escribe en el momento (otro servidor pudo haberlas cambiado) y reintenta si hubo un cambio simultáneo."""
+    global _datos, _leido
+    with _cerrojo:
+        for intento in (1, 2):
+            datos, sha = _remoto() if GH_TOKEN else (_datos, None)
+            lista = [dict(u) for u in datos['usuarios']]
+            resultado = cambio(lista)
+            nuevos = {**datos, 'usuarios': lista}
+            texto = json.dumps(nuevos, ensure_ascii=False, indent=2) + chr(10)
+            if GH_TOKEN:
+                try:
+                    _gh('PUT', {'message': 'Actualiza las cuentas de acceso [skip render]', 'branch': GH_RAMA, 'sha': sha,
+                                'content': base64.b64encode(texto.encode('utf-8')).decode()})
+                except urllib.error.HTTPError as e:
+                    if e.code == 409 and intento == 1:          # alguien guardó entre la lectura y la escritura
+                        continue
+                    raise
+                _leido = time.time()
+            else:
+                tmp = ARCHIVO + '.tmp'
+                with open(tmp, 'w', encoding='utf-8', newline=chr(10)) as f:
+                    f.write(texto)
+                os.replace(tmp, ARCHIVO)
+            _datos = nuevos
+            return resultado
+
+
+def _motivo(e):
+    """Texto corto con la causa de un fallo al guardar (código y mensaje de GitHub, si los hay)."""
+    if isinstance(e, urllib.error.HTTPError):
+        try:
+            msg = json.loads(e.read().decode('utf-8')).get('message', '')
+        except Exception:
+            msg = ''
+        return f'GitHub respondió {e.code}: {msg}'.strip()
+    return f'{type(e).__name__}: {e}'
 
 
 # ---------- claves y sesiones ----------
@@ -154,7 +207,7 @@ def manejar(handler, metodo, ruta):
 
 
 def _atender(h, metodo, ruta):
-    global _datos
+    refrescar()
     if ruta == '/api/ingresar' and metodo == 'POST':
         ip = h.headers.get('X-Forwarded-For', h.client_address[0]).split(',')[0].strip()
         if _bloqueado(ip):
@@ -180,6 +233,9 @@ def _atender(h, metodo, ruta):
     if ruta == '/api/usuarios' and metodo == 'GET':
         return _responder(h, 200, {'usuarios': [{'usuario': u['usuario'], 'acceso': u['acceso']} for u in _datos['usuarios']]})
 
+    def otro_admin(lista, quien):
+        return any(u['acceso'] == 'todos' and u is not quien for u in lista)
+
     if ruta == '/api/usuarios' and metodo == 'POST':
         d = _json(h)
         usuario, clave, acceso = str(d.get('usuario', '')).strip().lower(), str(d.get('clave', '')), d.get('acceso')
@@ -189,40 +245,48 @@ def _atender(h, metodo, ruta):
             return _responder(h, 400, {'error': 'La clave debe tener al menos 6 caracteres'})
         if acceso not in ACCESOS:
             return _responder(h, 400, {'error': 'Acceso no válido'})
-        with _cerrojo:
-            lista = [dict(u) for u in _datos['usuarios']]
+        nuevo = {'usuario': usuario, 'acceso': acceso, 'hash': huella(usuario, clave)}
+
+        def poner(lista):
             previo = next((u for u in lista if u['usuario'] == usuario), None)
-            if previo and previo['acceso'] == 'todos' and acceso != 'todos' and not any(u['acceso'] == 'todos' and u is not previo for u in lista):
-                return _responder(h, 400, {'error': 'No se puede quitar el acceso total al único administrador'})
-            nuevo = {'usuario': usuario, 'acceso': acceso, 'hash': huella(usuario, clave)}
+            if previo and previo['acceso'] == 'todos' and acceso != 'todos' and not otro_admin(lista, previo):
+                raise Rechazo(400, 'No se puede quitar el acceso total al único administrador')
             if previo:
                 lista[lista.index(previo)] = nuevo
             else:
                 lista.append(nuevo)
-            try:
-                _guardar({**_datos, 'usuarios': lista})
-            except Exception as e:
-                print('No se pudo guardar:', e)
-                return _responder(h, 502, {'error': 'No se pudo guardar la cuenta (revise el token de GitHub del servidor)'})
-        return _responder(h, 200, {'ok': True, 'actualizado': bool(previo)})
+            return bool(previo)
+
+        try:
+            actualizado = modificar(poner)
+        except Rechazo as e:
+            return _responder(h, e.codigo, {'error': str(e)})
+        except Exception as e:
+            motivo = _motivo(e)
+            print('No se pudo guardar:', motivo)
+            return _responder(h, 502, {'error': 'No se pudo guardar la cuenta. ' + motivo})
+        return _responder(h, 200, {'ok': True, 'actualizado': actualizado})
 
     m = re.match(r'^/api/usuarios/([^/]+)$', ruta)
     if m and metodo == 'DELETE':
-        import urllib.parse
         usuario = urllib.parse.unquote(m.group(1)).strip().lower()
-        with _cerrojo:
-            lista = [dict(u) for u in _datos['usuarios']]
+
+        def quitar(lista):
             objetivo = next((u for u in lista if u['usuario'] == usuario), None)
             if not objetivo:
-                return _responder(h, 404, {'error': 'No existe ese usuario'})
-            if objetivo['acceso'] == 'todos' and not any(u['acceso'] == 'todos' and u is not objetivo for u in lista):
-                return _responder(h, 400, {'error': 'No se puede quitar al único administrador'})
+                raise Rechazo(404, 'No existe ese usuario')
+            if objetivo['acceso'] == 'todos' and not otro_admin(lista, objetivo):
+                raise Rechazo(400, 'No se puede quitar al único administrador')
             lista.remove(objetivo)
-            try:
-                _guardar({**_datos, 'usuarios': lista})
-            except Exception as e:
-                print('No se pudo guardar:', e)
-                return _responder(h, 502, {'error': 'No se pudo guardar el cambio (revise el token de GitHub del servidor)'})
+
+        try:
+            modificar(quitar)
+        except Rechazo as e:
+            return _responder(h, e.codigo, {'error': str(e)})
+        except Exception as e:
+            motivo = _motivo(e)
+            print('No se pudo guardar:', motivo)
+            return _responder(h, 502, {'error': 'No se pudo guardar el cambio. ' + motivo})
         return _responder(h, 200, {'ok': True})
 
     _responder(h, 404, {'error': 'No existe'})

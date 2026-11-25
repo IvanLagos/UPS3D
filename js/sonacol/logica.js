@@ -1,16 +1,16 @@
 import { toast } from '../core/interaction.js';
 
 /* Lógica eléctrica de los circuitos nuevos de SONACOL (el circuito 3 es el paralelo redundante de siempre, en logic/).
-   Circuito 1: RED → Q0 → UPS A (6 kVA) → UPS B (6 kVA) en serie → carga regulable (máx. 6 kVA, sobre eso hay sobrecarga).
-   Circuito 2: RED → Q0 → 2 UPS de 10 kVA cruzadas con 2 STS (UPS 1 → A de STS-1 y B de STS-2; UPS 2 → A de STS-2 y B de STS-1) → 2 cargas.
+   Circuito 1: RED → CB0 → UPS A (6 kVA) → UPS B (6 kVA) en serie → carga regulable (máx. 6 kVA, sobre eso hay sobrecarga).
+   Circuito 2: RED → CB0 → 2 UPS de 10 kVA cruzadas con 2 STS (UPS 1 → A de STS-1 y B de STS-2; UPS 2 → A de STS-2 y B de STS-1) → 2 cargas.
    Circuito 1: Q[0] general de red, Q[1] entrada UPS A, Q[2] salida UPS A, Q[3] entrada UPS B, Q[4] salida UPS B, Q[5] rodeo de la UPS A y
-   Q[6] rodeo de la UPS B. Los dos rodeos se conectan en el punto M, justo en medio entre Q2 y Q3: el rodeo A lleva la red (antes de Q1) hasta M y el rodeo B
-   lleva M hasta la carga (después de Q4). Cerrar un rodeo con la UPS entregando en inversor une red e inversor sin sincronizar: la UPS entra en falla
+   Q[6] rodeo de la UPS B. Los dos rodeos se conectan en el punto M, justo en medio entre CB2 y CB3: el rodeo A lleva la red (antes de CB1) hasta M y el rodeo B
+   lleva M hasta la carga (después de CB4). Cerrar un rodeo con la UPS entregando en inversor une red e inversor sin sincronizar: la UPS entra en falla
    (con la UPS en bypass, o aislada con su automático de salida abierto, es seguro).
    Circuito 2: Q[0] general de red, Q[1] entrada UPS 1, Q[2] salida UPS 1, Q[3] entrada UPS 2, Q[4] salida UPS 2,
-   Q[5] salida STS-1 (a la carga 1), Q[6] salida STS-2 (a la carga 2), Q[7] bypass del STS-1 (de la salida de la UPS 1, aguas abajo de Q2, a la carga 1)
-   y Q[8] bypass del STS-2 (de la salida de la UPS 2, aguas abajo de Q4, a la carga 2), Q[9] rodeo de la UPS 1 y Q[10] rodeo de la UPS 2 (cada uno lleva la
-   red, antes de la entrada de su UPS, a la salida de esa UPS, aguas abajo de Q2 / Q4), con su contacto auxiliar adelantado,
+   Q[5] salida STS-1 (a la carga 1), Q[6] salida STS-2 (a la carga 2), Q[7] bypass del STS-1 (de la salida de la UPS 1, aguas abajo de CB2, a la carga 1)
+   y Q[8] bypass del STS-2 (de la salida de la UPS 2, aguas abajo de CB4, a la carga 2), Q[9] rodeo de la UPS 1 y Q[10] rodeo de la UPS 2 (cada uno lleva la
+   red, antes de la entrada de su UPS, a la salida de esa UPS, aguas abajo de CB2 / CB4), con su contacto auxiliar adelantado,
    y Q[11] a Q[14] automáticos de entrada de los STS, justo aguas arriba de cada entrada: Q[11] entrada A del STS-1, Q[12] entrada B del STS-1,
    Q[13] entrada A del STS-2, Q[14] entrada B del STS-2. true = cerrado. */
 
@@ -27,7 +27,7 @@ export const SC = {
   c2: { Q: [true, true, true, true, true, true, true, false, false, false, false, true, true, true, true], cmd: [false, false], auxSig: [false, false], auxForzo: [false, false], pref: ['A', 'A'], fault: [false, false], faultSts: [false, false], byp: [false, false], soc: [100, 100], load: [5, 5] },
 };
 
-/* Contacto auxiliar adelantado de cada rodeo (circuito 1: Q5 = rodeo de la UPS A, Q6 = rodeo de la UPS B; circuito 2: Q9 = rodeo de la UPS 1, Q10 = rodeo de la UPS 2):
+/* Contacto auxiliar adelantado de cada rodeo (circuito 1: CB5 = rodeo de la UPS A, CB6 = rodeo de la UPS B; circuito 2: CB9 = rodeo de la UPS 1, CB10 = rodeo de la UPS 2):
    va pegado al automático del rodeo y cierra unas milésimas ANTES que él (y abre unas milésimas DESPUÉS). Su señal pasa solo la UPS de ese rodeo a bypass estático
    (las UPS no están comunicadas), así queda sincronizada con la red justo antes de que el rodeo la una a la red. Al soltarse la devuelve a inversor si fue quien la
    pasó a bypass. En el modelo el adelanto se alarga a una fracción de segundo para poder verlo. */
@@ -74,11 +74,11 @@ function unidad(inV, fault, soc, kva, visto, byp = false, disparada = false) {
 export function calc1() {
   const s = SC.c1, Q = s.Q, kva = KVA[1];
   const gen = SC.mains && Q[0];
-  const demanda = Q[4] || Q[6] ? s.load : 0;                                  // la carga cuelga de la UPS B (por Q4) o de su rodeo
-  const A = unidad(gen && Q[1], s.fault[0], s.soc[0], kva, Q[2] ? demanda : 0, s.byp[0]);   // la UPS A alimenta el punto M a través de Q2
+  const demanda = Q[4] || Q[6] ? s.load : 0;                                  // la carga cuelga de la UPS B (por CB4) o de su rodeo
+  const A = unidad(gen && Q[1], s.fault[0], s.soc[0], kva, Q[2] ? demanda : 0, s.byp[0]);   // la UPS A alimenta el punto M a través de CB2
   const aM = A.vivo && Q[2];                                                   // salida de la UPS A llegando a M
   const rodA = gen && Q[5];                                                    // rodeo A: la red llega directo a M
-  const M = aM || rodA;                                                        // punto de unión, justo en medio entre Q2 y Q3
+  const M = aM || rodA;                                                        // punto de unión, justo en medio entre CB2 y CB3
   const B = unidad(M && Q[3], s.fault[1], s.soc[1], kva, Q[4] ? s.load : 0, s.byp[1]);
   const bOut = B.vivo && Q[4];                                                 // salida de la UPS B llegando a la carga
   const rodB = M && Q[6];                                                      // rodeo B: de M directo a la carga
@@ -99,9 +99,9 @@ export function calc2() {
   let visto = [0, 0], asign = [0, 0], u, sts, entrega = [false, false];
   for (let vuelta = 0; vuelta < 5; vuelta++) {              // la elección de fuente y la sobrecarga dependen una de otra: se itera; un disparo nunca se deshace, así que termina siempre
     u = [0, 1].map(i => unidad(gen && Q[2 * i + 1], s.fault[i], s.soc[i], kva, visto[i], s.byp[i], trip[i]));
-    entrega = u.map((x, i) => x.vivo && Q[2 * i + 2]);                         // la UPS i entrega por sí misma a su salida (aguas abajo de Q2 / Q4)
+    entrega = u.map((x, i) => x.vivo && Q[2 * i + 2]);                         // la UPS i entrega por sí misma a su salida (aguas abajo de CB2 / CB4)
     const sale = [0, 1].map(i => entrega[i] || !!(gen && Q[9 + i]));           // salida i disponible: de la UPS o de su rodeo
-    sts = [0, 1].map(j => {                                                    // el STS j prefiere su fuente A (la UPS j); cada entrada tiene su automático (Q11…Q14)
+    sts = [0, 1].map(j => {                                                    // el STS j prefiere su fuente A (la UPS j); cada entrada tiene su automático (CB11…CB14)
       const falla = !!s.faultSts[j];                                          // STS en falla: no transfiere ni entrega (la carga solo se alimenta por su bypass)
       const a = !falla && sale[j] && Q[11 + 2 * j], b = !falla && sale[1 - j] && Q[12 + 2 * j], pref = s.pref[j];
       const sel = pref === 'A' ? (a ? 'A' : b ? 'B' : null) : (b ? 'B' : a ? 'A' : null);   // usa la fuente preferida; si no está, la otra
@@ -121,7 +121,7 @@ export function calc2() {
     visto = nuevo;
     if (!cambio) { u = [0, 1].map(i => unidad(gen && Q[2 * i + 1], s.fault[i], s.soc[i], kva, visto[i], s.byp[i], trip[i])); break; }
   }
-  const o = [0, 1].map(i => u[i].vivo && Q[2 * i + 2] || !!(gen && Q[9 + i]));  // salida de cada UPS, aguas abajo de Q2 / Q4 (de la UPS o de su rodeo)
+  const o = [0, 1].map(i => u[i].vivo && Q[2 * i + 2] || !!(gen && Q[9 + i]));  // salida de cada UPS, aguas abajo de CB2 / CB4 (de la UPS o de su rodeo)
   const entregaF = u.map((x, i) => x.vivo && Q[2 * i + 2]);
   const porBypass = [0, 1].map(j => !!(Q[7 + j] && o[j]));                // la carga j cuelga del bypass de su STS
   sts.forEach((t, j) => { t.out = t.sel !== null; t.q = Q[5 + j]; t.byp = porBypass[j]; t.on = (t.out && t.q) || t.byp; t.carga = s.load[j];

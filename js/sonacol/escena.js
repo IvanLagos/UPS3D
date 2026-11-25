@@ -1,5 +1,5 @@
 /* Modelo 3D de los circuitos nuevos de SONACOL. Cada circuito tiene el mismo rack que el circuito 3 (estructura, laterales, puerta frontal,
-   puerta trasera y techo), su riel DIN con los automáticos Q0…Q4 (manipulables), los equipos, el medidor y los cables de potencia por el suelo.
+   puerta trasera y techo), su riel DIN con los automáticos CB0…CB4 (manipulables), los equipos, el medidor y los cables de potencia por el suelo.
    El cableado interior del rack no se modela. */
 import * as THREE from 'three';
 import { scene, POZO } from '../core/scene.js';
@@ -128,21 +128,31 @@ function sts(g, y, n) {
   return { scr, ledA, ledB, ledS };
 }
 
-/** Riel DIN con los automáticos Q0…Q4 (los mismos del editor de tableros que usa el circuito 3), cada uno con su piloto. */
+/* Distribución del tablero: con pocos automáticos van en una fila; con más de 9 (circuito 2) no caben a lo ancho y se reparten en dos filas
+   (CB0…CB7 arriba, CB8…CB14 abajo), y los pilotos igual. Alturas dentro del tablero: riel(es), piloto, placa del piloto y límite entre cubiertas. */
+const disposicion = total => total > 9
+  ? { filas: [Math.ceil(total / 2), Math.floor(total / 2)], rieles: [1.69, 1.578], placa: 0.048, paso: 0.0625, anchoPlaca: 0.058, pilotos: [1.87, 1.806], tags: [1.84, 1.776], pasoPiloto: 0.061, anchoTag: 0.057, corte: 1.753 }
+  : { filas: [total], rieles: [1.609], placa: 0.05, paso: total > 7 ? 0.055 : total > 5 ? 0.066 : 0.075, anchoPlaca: 0.052, corte: 1.69 };
+/** Fila y columna del automático `i` según la disposición. */
+const lugar = (d, i) => { let f = 0, k = i; while (k >= d.filas[f]) k -= d.filas[f++]; return { f, k, n: d.filas[f] }; };
+
+/** Riel DIN con los automáticos CB0…CB4 (los mismos del editor de tableros que usa el circuito 3), cada uno con su piloto. */
 function rielAutomaticos(g, n, nombres) {
   const panel = new THREE.Group(); panel.position.y = -0.01; g.add(panel);
-  const Y = 1.609;
-  box(0.52, 0.035, 0.006, M.rail, 0, Y, 0.311, panel);
-  box(0.5, 0.008, 0.0065, M.dark, 0, Y, 0.311, panel);
-  for (const sx of [-1, 1]) box(0.014, 0.05, 0.02, M.rail, sx * 0.256, Y, 0.318, panel);
+  const d = disposicion(nombres.length);
+  for (const Y of d.rieles) {
+    box(0.52, 0.035, 0.006, M.rail, 0, Y, 0.311, panel);
+    box(0.5, 0.008, 0.0065, M.dark, 0, Y, 0.311, panel);
+    for (const sx of [-1, 1]) box(0.014, 0.05, 0.02, M.rail, sx * 0.256, Y, 0.318, panel);
+  }
   const brk = nombres.map((nom, i) => {
-    const x = (i - (nombres.length - 1) / 2) * (nombres.length > 9 ? 0.044 : nombres.length > 7 ? 0.055 : nombres.length > 5 ? 0.066 : 0.075);
-    const G = buildPieza({ id: 'Q' + i, type: 'breaker', name: 'Q' + i, poles: 1, amp: i === 0 ? 'C63' : 'C40', on: true, aux: false, mod: 2 }, undefined, { sinPlaca: true });
+    const l = lugar(d, i), Y = d.rieles[l.f], x = (l.k - (l.n - 1) / 2) * d.paso;
+    const G = buildPieza({ id: 'CB' + i, type: 'breaker', name: 'CB' + i, poles: 1, amp: i === 0 ? 'C63' : n === 2 && i >= 11 ? 'C32' : 'C40', on: true, aux: false, mod: 2 }, undefined, { sinPlaca: true });
     G.scale.setScalar(ESCALA); G.position.set(x, Y, 0.314); G.userData.tip = `${nom} · clic para abrirlo o cerrarlo`;
     sinEsferas(G); panel.add(G);
     markClick(G, () => cb.toggle(n, i));
-    const b = { lever: G.userData.pivote, x, G, cerrado: null };
-    const kR = n === 1 && i >= 5 ? i - 5 : n === 2 && i >= 9 ? i - 9 : -1;
+    const b = { lever: G.userData.pivote, x, y: Y, G, cerrado: null };
+    const kR = n === 1 && i >= 5 ? i - 5 : n === 2 && (i === 9 || i === 10) ? i - 9 : -1;
     if (kR >= 0) {                                              // contacto auxiliar adelantado del rodeo: automático delgado de palanca verde, pegado a su izquierda
       const xa = x - POLO * MOD * ESCALA / 2 - POLO * ESCALA / 2;
       const A = buildPieza({ id: 'AUX' + i, type: 'breaker', name: 'AUX', poles: 1, amp: 'C6', on: false, aux: false, verde: true }, undefined, { sinPlaca: true });
@@ -154,7 +164,7 @@ function rielAutomaticos(g, n, nombres) {
     }
     return b;
   });
-  brk.panel = panel;
+  brk.panel = panel; brk.d = d;
   return brk;
 }
 function ponerAutomaticos(brk, Q, vivo) {
@@ -169,25 +179,29 @@ function ponerAutomaticos(brk, Q, vivo) {
 
 /** Cubiertas del tablero (las mismas del circuito 3): pilotos arriba y automáticos abajo, con tapa ciega sobre ellas. */
 function cubiertas(n, brk, nombres) {
-  const panel = brk.panel;
+  const panel = brk.panel, d = brk.d;
   box(COVER_W, 0.03, TAPA_T, M.frame, 0, 1.92, COVER_Z, panel);
   for (const sx of [-1, 1]) {
     const sc = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0065, 0.006, 14).rotateX(Math.PI / 2), std(0xc9ced4, 0.85, 0.3));
     sc.position.set(sx * 0.262, 1.92, FACE_Z + 0.003); panel.add(sc);
   }
-  // cubierta de pilotos: Q0 en rojo y Q1…Q4 en verde, cada uno con su placa
-  const pil = makeCover(1.692, 1.905, 'Cubierta de pilotos · clic para abrirla o cerrarla (con la puerta frontal abierta)', [], panel, c => clicTapa(n, c));
+  // cubierta de pilotos: CB0 en rojo y CB1…CB4 en verde, cada uno con su placa
+  const pil = makeCover(d.corte + 0.002, 1.905, 'Cubierta de pilotos · clic para abrirla o cerrarla (con la puerta frontal abierta)', [], panel, c => clicTapa(n, c));
   const PS = 0.72;
   nombres.forEach((nom, i) => {
-    const rojo = i === 0, x = rojo ? -0.01 : -0.01 + (i - 1 - (nombres.length - 2) / 2) * (nombres.length > 9 ? 0.05 : nombres.length > 7 ? 0.065 : nombres.length > 5 ? 0.085 : 0.1), lamp = rojo ? 1.865 : 1.795, tag = rojo ? 1.835 : 1.765;
-    const pg = buildPieza({ id: `P${n}${i}`, type: 'piloto', name: 'Q' + i, color: rojo ? 'Rojo' : 'Verde', on: false }, undefined, { sinPlaca: true });
+    const rojo = i === 0, l = lugar(d, i);
+    // una fila de automáticos: el rojo arriba y los verdes en otra fila; dos filas: cada piloto en el mismo orden que su automático
+    const x = d.pilotos ? -0.012 + (l.k - (l.n - 1) / 2) * d.pasoPiloto : rojo ? -0.01 : -0.01 + (i - 1 - (nombres.length - 2) / 2) * (nombres.length > 7 ? 0.065 : nombres.length > 5 ? 0.085 : 0.1);
+    const lamp = d.pilotos ? d.pilotos[l.f] : rojo ? 1.865 : 1.795, tag = d.pilotos ? d.tags[l.f] : rojo ? 1.835 : 1.765;
+    const pg = buildPieza({ id: `P${n}${i}`, type: 'piloto', name: 'CB' + i, color: rojo ? 'Rojo' : 'Verde', on: false }, undefined, { sinPlaca: true });
     pg.scale.setScalar(PS); pg.position.set(x, lamp - 0.022 * PS, COVER_Z - TAPA_T / 2 - 0.04 * PS + 0.003);
     sinEsferas(pg); pil.add(pg); brk[i].piloto = pg;
-    const t = labelPlane(nom.split(' · ')[1], 0.092, 0.015, { w: 400, h: 65, size: 44, color: '#ffffff', bg: '#101113' });
+    const ancho = d.anchoTag || 0.092;
+    const t = labelPlane(nom.split(' · ')[1], ancho, 0.015, { w: Math.round(ancho * 4350), h: 65, size: d.anchoTag ? 40 : 44, color: '#ffffff', bg: '#101113' });
     t.position.set(x, tag, FACE_Z + 0.0005); pil.add(t);
   });
   const warn = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.04), new THREE.MeshBasicMaterial({ map: textTex('⚠', { w: 64, h: 64, size: 46, bg: '#f2c200', color: '#111' }), toneMapped: false }));
-  warn.position.set(0.232, 1.83, FACE_Z + 0.0005); pil.add(warn);
+  warn.position.set(d.pilotos ? 0.242 : 0.232, d.pilotos ? 1.87 : 1.83, FACE_Z + 0.0005); if (d.pilotos) warn.scale.setScalar(0.7); pil.add(warn);
   // cubierta de automáticos: una ranura del tamaño de cada automático y su placa de texto
   panel.updateWorldMatrix(true, true);
   const ranuras = brk.map(b => {
@@ -197,15 +211,18 @@ function cubiertas(n, brk, nombres) {
     const x0 = b.aux.x - POLO * ESCALA / 2 - m, x1 = b.x + hw;                 // una sola ranura para el rodeo y su contacto auxiliar
     return { x: (x0 + x1) / 2, y, hw: (x1 - x0) / 2, hh };
   });
-  const aut = makeCover(1.531, 1.69, 'Cubierta de automáticos · clic para abrirla o cerrarla (con la puerta frontal abierta)', ranuras, panel, c => clicTapa(n, c));
+  const aut = makeCover(1.531, d.corte, 'Cubierta de automáticos · clic para abrirla o cerrarla (con la puerta frontal abierta)', ranuras, panel, c => clicTapa(n, c));
   nombres.forEach((nom, i) => {
-    const p = new THREE.Group(), l = labelPlane(nom.replace(' · ', '-'), 0.052, 0.028, { w: 260, h: 140, size: 36, color: '#ffffff', bg: '#101113' });
-    l.position.set(brk[i].x, 1.609 + 0.05, FACE_Z + 0.0005); p.add(l); aut.add(p);
+    const an = d.anchoPlaca, al = d.filas.length > 1 ? 0.022 : 0.028;
+    const p = new THREE.Group(), l = labelPlane(nom.replace(' · ', '-'), an, al, { w: Math.round(an * 5000), h: Math.round(al * 5000), size: d.filas.length > 1 ? 36 : 34, color: '#ffffff', bg: '#101113' });
+    l.position.set(brk[i].x, brk[i].y + d.placa, FACE_Z + 0.0005); p.add(l); aut.add(p);
     markClick(p, () => cb.toggle(n, i));
     if (brk[i].aux) {                                           // papelito del contacto auxiliar sobre su módulo
-      const q = new THREE.Group(), la = labelPlane('CONT' + String.fromCharCode(10) + 'AUX', 0.028, 0.028, { w: 140, h: 140, size: 40, color: '#ffffff', bg: '#101113' });
-      la.position.set(brk[i].aux.x, 1.609 + 0.05, FACE_Z + 0.0005); q.add(la); aut.add(q);
-      markClick(q, () => cb.toggle(n, i));
+      if (d.filas.length === 1) {                               // en dos filas no queda sitio para su papelito (el globo del módulo lo explica)
+        const q = new THREE.Group(), la = labelPlane('CONT' + String.fromCharCode(10) + 'AUX', 0.028, 0.028, { w: 140, h: 140, size: 40, color: '#ffffff', bg: '#101113' });
+        la.position.set(brk[i].aux.x, brk[i].y + d.placa, FACE_Z + 0.0005); q.add(la); aut.add(q);
+        markClick(q, () => cb.toggle(n, i));
+      }
     }
   });
   RACKS[n].tapas = [pil, aut];
@@ -266,7 +283,7 @@ function cableFino(g, pts, color, r = 0.0025) {
   const m = new THREE.Mesh(new THREE.TubeGeometry(path, Math.max(40, Math.round(path.getLength() * 60)), r, 8), mat);
   m.castShadow = true; g.add(m);
 }
-/** Medidor → rack: la fase (rojo) y el neutro (azul) bajan del medidor, suben por fuera del rack, entran por el techo y bajan hasta el automático Q0;
+/** Medidor → rack: la fase (rojo) y el neutro (azul) bajan del medidor, suben por fuera del rack, entran por el techo y bajan hasta el automático CB0;
     la tierra (amarillo y verde) sale de la pica enterrada, sube por el costado y entra por el techo a una barra de cobre. */
 function cablesMedidor(g, mt, xQ0) {
   scene.updateMatrixWorld(true);
@@ -297,8 +314,8 @@ function tapasCiegas(g, ys) {
 
 /* ---------- circuito 1: 2 UPS en serie ---------- */
 const RACKS = { 1: rackCompleto(g1, 1, ['2 UPS de 6 kVA en serie', 'Potencia total 6 kVA', '220–240 VAC']) };
-const aut1 = rielAutomaticos(g1, 1, ['Q0 · RED', 'Q1 · ENT A', 'Q2 · SAL A', 'Q3 · ENT B', 'Q4 · SAL B', 'Q5 · RODEO A', 'Q6 · RODEO B']);
-cubiertas(1, aut1, ['Q0 · RED', 'Q1 · ENT A', 'Q2 · SAL A', 'Q3 · ENT B', 'Q4 · SAL B', 'Q5 · RODEO A', 'Q6 · RODEO B']);
+const aut1 = rielAutomaticos(g1, 1, ['CB0 · RED', 'CB1 · ENT A', 'CB2 · SAL A', 'CB3 · ENT B', 'CB4 · SAL B', 'CB5 · RODEO A', 'CB6 · RODEO B']);
+cubiertas(1, aut1, ['CB0 · RED', 'CB1 · ENT A', 'CB2 · SAL A', 'CB3 · ENT B', 'CB4 · SAL B', 'CB5 · RODEO A', 'CB6 · RODEO B']);
 const upsA = ups(g1, 1.445, 'UPS A · 6 kVA', 1, 0), bcoA = banco(g1, 1.285, 'UPS A', '6×12 V');
 const upsB = ups(g1, 1.125, 'UPS B · 6 kVA', 1, 1), bcoB = banco(g1, 0.965, 'UPS B', '6×12 V');
 cablesMedidor(g1, medidor(g1), -0.1125);
@@ -308,30 +325,15 @@ const k1 = { bout: haciaCarga(g1, 0.1, 0.1) };
 
 /* ---------- circuito 2: 2 UPS con 2 STS ---------- */
 RACKS[2] = rackCompleto(g2, 2, ['2 UPS 10 kVA + 2 STS', 'Potencia total 10 kVA', '220–240 VAC']);
-const aut2 = rielAutomaticos(g2, 2, ['Q0 · RED', 'Q1 · ENT 1', 'Q2 · SAL 1', 'Q3 · ENT 2', 'Q4 · SAL 2', 'Q5 · S-STS1', 'Q6 · S-STS2', 'Q7 · BYP STS1', 'Q8 · BYP STS2', 'Q9 · RODEO 1', 'Q10 · RODEO 2']);
-cubiertas(2, aut2, ['Q0 · RED', 'Q1 · ENT 1', 'Q2 · SAL 1', 'Q3 · ENT 2', 'Q4 · SAL 2', 'Q5 · S-STS1', 'Q6 · S-STS2', 'Q7 · BYP STS1', 'Q8 · BYP STS2', 'Q9 · RODEO 1', 'Q10 · RODEO 2']);
+const NOMBRES2 = ['CB0 · RED', 'CB1 · ENT 1', 'CB2 · SAL 1', 'CB3 · ENT 2', 'CB4 · SAL 2', 'CB5 · S-STS1', 'CB6 · S-STS2', 'CB7 · BYP STS1', 'CB8 · BYP STS2', 'CB9 · RODEO 1', 'CB10 · RODEO 2',
+  'CB11 · A-STS1', 'CB12 · B-STS1', 'CB13 · A-STS2', 'CB14 · B-STS2'];                 // CB11…CB14: entradas A y B de cada STS
+const aut2 = rielAutomaticos(g2, 2, NOMBRES2);
+cubiertas(2, aut2, NOMBRES2);
 const up1 = ups(g2, 1.445, 'UPS 1 · 10 kVA', 2, 0), bc1 = banco(g2, 1.285, 'UPS 1', '10×12 V');
 const up2 = ups(g2, 1.125, 'UPS 2 · 10 kVA', 2, 1), bc2 = banco(g2, 0.965, 'UPS 2', '10×12 V');
 const st1 = sts(g2, 0.805, 1), st2 = sts(g2, 0.645, 2);
 cablesMedidor(g2, medidor(g2), -0.15);
-tapasCiegas(g2, []);
-/** Módulo con los 4 automáticos de entrada de los STS (Q11…Q14), justo aguas arriba de las entradas A y B de cada STS. */
-function entradasSts(g, y) {
-  const m = new THREE.Group(); m.position.y = y; g.add(m);
-  box(0.5, 0.15, 0.62, M.module, 0, 0, 0, m);
-  box(0.5, 0.15, 0.02, M.face, 0, 0, 0.32, m);
-  const nom = [['Q11', 'STS-1 A'], ['Q12', 'STS-1 B'], ['Q13', 'STS-2 A'], ['Q14', 'STS-2 B']];
-  etiqueta(m, 'ENTRADAS STS', 0.2, 0.026, 0, 0.058, 0.332);
-  return nom.map(([q, t], k) => {
-    const x = (k - 1.5) * 0.105;
-    const G = buildPieza({ id: q, type: 'breaker', name: q, poles: 1, amp: 'C32', on: true, aux: false, mod: 2 }, undefined, { sinPlaca: true });
-    G.scale.setScalar(ESCALA); G.position.set(x, -0.01, 0.325); G.userData.tip = `${q} · Entrada ${t.slice(-1)} del ${t.slice(0, 5)} · clic para abrirlo o cerrarlo`;
-    sinEsferas(G); m.add(G); markClick(G, () => cb.toggle(2, 11 + k));
-    etiqueta(m, q + '\n' + t, 0.07, 0.03, x, -0.057, 0.332);
-    return { lever: G.userData.pivote, cerrado: null };
-  });
-}
-const entr2 = entradasSts(g2, 0.485);
+tapasCiegas(g2, [0.485]);
 const car2a = carga(g2, 1.3, 0.1, 'CARGA 1'), car2b = carga(g2, 2.1, 0.1, 'CARGA 2');   // una al lado de la otra, de frente
 const k2 = {
   s0: haciaCarga(g2, 0.05, 0.1),
@@ -401,8 +403,7 @@ export function pantallas1(r) {
 export function aplicar2(r) {
   const [U1, U2] = r.u, w = r.w;
   const Ql2 = SC.c2.Q.map((q, i) => (i >= 9 && SC.c2.auxSig[i - 9] ? SC.c2.cmd[i - 9] : q));      // la palanca del rodeo y la del contacto auxiliar siguen la orden desde que se da
-  ponerAutomaticos(aut2, Ql2, [w.red, w.g, w.o0, w.g, w.o1, w.t0, w.t1, w.b0, w.b1, w.g, w.g]);
-  entr2.forEach((b, k) => { const c = SC.c2.Q[11 + k]; if (b.cerrado !== c) { b.cerrado = c; tween(b.lever.rotation, 'x', c ? -LEVER_ANGLE : LEVER_ANGLE, 0.25); } });
+  ponerAutomaticos(aut2, Ql2, [w.red, w.g, w.o0, w.g, w.o1, w.t0, w.t1, w.b0, w.b1, w.g, w.g, w.x0, w.x1, w.x1, w.x0]);     // CB11 y CB14 desde la UPS 1; CB12 y CB13 desde la UPS 2
   ledUps(up1, U1); ledUps(up2, U2);
   ledBanco(bc1, U1, U1.inV && SC.c2.soc[0] < 100); ledBanco(bc2, U2, U2.inV && SC.c2.soc[1] < 100);
   [[st1, r.sts[0]], [st2, r.sts[1]]].forEach(([s, t]) => {

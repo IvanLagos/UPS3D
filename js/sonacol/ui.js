@@ -1,6 +1,7 @@
 /* Interfaz de los circuitos nuevos de SONACOL: selector de circuito, panel lateral, diagrama unifilar y alarmas. */
 import { $ } from '../core/dom.js';
 import { toast } from '../core/interaction.js';
+import { armarPestanas } from '../ui/pestanas.js';
 import { tween } from '../core/tween.js';
 import { camera, controls } from '../core/scene.js';
 import { SC, KVA, AUT_MIN, autonomia, ordenarRodeo, rodeoDe, conmutarSts } from './logica.js';
@@ -25,16 +26,16 @@ const YP = 360, HS = 68, DC = 40;                              // DC: separació
 
 const UNI1 = (() => {
   const cx = 197, rx = 350;                                  // eje principal y columna de los dos rodeos (a la misma distancia)
-  return N('u1_red', cx - 70, 6, 140, 20, 'RED ELÉCTRICA') + W('u1_w_red', `M${cx} 26V41`) + B(1, 0, cx, 50, 'Q0 General de red')
-    + W('u1_w_g', `M${cx} 59V107`) + B(1, 1, cx, 116, 'Q1 Entrada UPS A')
-    + UPS('u1_a', cx, 130, 'UPS A · 6 kVA') + W('u1_wj', `M${cx} 275V291`) + B(1, 2, cx, 300, 'Q2 Salida UPS A')
-    + W('u1_wm1', `M${cx} 309V336`) + W('u1_wm2', `M${cx} 336V363`) + B(1, 3, cx, 372, 'Q3 Entrada UPS B')
-    + UPS('u1_b', cx, 386, 'UPS B · 6 kVA') + W('u1_wq2', `M${cx} 531V551`) + B(1, 4, cx, 560, 'Q4 Salida UPS B')
+  return N('u1_red', cx - 70, 6, 140, 20, 'RED ELÉCTRICA') + W('u1_w_red', `M${cx} 26V41`) + B(1, 0, cx, 50, 'CB0 General de red')
+    + W('u1_w_g', `M${cx} 59V107`) + B(1, 1, cx, 116, 'CB1 Entrada UPS A')
+    + UPS('u1_a', cx, 130, 'UPS A · 6 kVA') + W('u1_wj', `M${cx} 275V291`) + B(1, 2, cx, 300, 'CB2 Salida UPS A')
+    + W('u1_wm1', `M${cx} 309V336`) + W('u1_wm2', `M${cx} 336V363`) + B(1, 3, cx, 372, 'CB3 Entrada UPS B')
+    + UPS('u1_b', cx, 386, 'UPS B · 6 kVA') + W('u1_wq2', `M${cx} 531V551`) + B(1, 4, cx, 560, 'CB4 Salida UPS B')
     + W('u1_w_bout', `M${cx} 569V640`) + N('u1_load', cx - 70, 640, 140, 20, 'CARGA') + X('u1_xload', cx - 74, 634, cx + 74, 666)
-    // rodeos (bypass de mantención): los dos se conectan en M, justo en medio entre Q2 y Q3, y quedan a la misma distancia del eje
-    + W('u1_ra1', `M${cx} 80H${rx}V199`) + B(1, 5, rx, 208, 'Q5 Rodeo UPS A') + `<g id="u1_aux0"><text class="l" x="${rx + 13}" y="223">Aux. adelantado</text><text class="l" x="${rx + 13}" y="234">→ UPS A</text></g>` + W('u1_ra2', `M${rx} 217V336`)
+    // rodeos (bypass de mantención): los dos se conectan en M, justo en medio entre CB2 y CB3, y quedan a la misma distancia del eje
+    + W('u1_ra1', `M${cx} 80H${rx}V199`) + B(1, 5, rx, 208, 'CB5 Rodeo UPS A') + `<g id="u1_aux0"><text class="l" x="${rx + 13}" y="223">Aux. adelantado</text><text class="l" x="${rx + 13}" y="234">→ UPS A</text></g>` + W('u1_ra2', `M${rx} 217V336`)
     + W('u1_hm', `M${cx} 336H${rx}`) + `<circle id="u1_M" class="dot" cx="${cx}" cy="336" r="3.5"/>`
-    + W('u1_rb1', `M${rx} 336V464`) + B(1, 6, rx, 473, 'Q6 Rodeo UPS B') + `<g id="u1_aux1"><text class="l" x="${rx + 13}" y="488">Aux. adelantado</text><text class="l" x="${rx + 13}" y="499">→ UPS B</text></g>` + W('u1_rb2', `M${rx} 482V610H${cx}`);
+    + W('u1_rb1', `M${rx} 336V464`) + B(1, 6, rx, 473, 'CB6 Rodeo UPS B') + `<g id="u1_aux1"><text class="l" x="${rx + 13}" y="488">Aux. adelantado</text><text class="l" x="${rx + 13}" y="499">→ UPS B</text></g>` + W('u1_rb2', `M${rx} 482V610H${cx}`);
 })();
 
 /** Conmutador del STS j: una barra que une la salida con la entrada A o con la B (px: pivote; xa, xb: contactos). Al presionarlo conmuta a la otra fuente. */
@@ -45,30 +46,30 @@ const SW = (j, px, xa, xb) => `<g class="sw" id="u2_sw${j}" data-j="${j}"><rect 
 
 const UNI2 = (() => {
   const a = 75, b = 320, d = 45;                              // d: desplazamiento hacia abajo de los STS y lo que sigue, para dejar sitio a los automáticos de entrada
-  const yP = YP, hS = HS, yQ = yP - 24;                           // puertos de entrada de los STS y automáticos de entrada (Q11…Q14), justo aguas arriba de cada puerto
-  return N('u2_red', 127, 6, 140, 20, 'RED ELÉCTRICA') + W('u2_w_red', 'M197 26V35') + B(2, 0, 197, 44, 'Q0 General de red')
+  const yP = YP, hS = HS, yQ = yP - 24;                           // puertos de entrada de los STS y automáticos de entrada (CB11…CB14), justo aguas arriba de cada puerto
+  return N('u2_red', 127, 6, 140, 20, 'RED ELÉCTRICA') + W('u2_w_red', 'M197 26V35') + B(2, 0, 197, 44, 'CB0 General de red')
     + W('u2_w_g', 'M197 53V70') + W('u2_w_bus', `M${a} 70H${b}`)
-    + W('u2_w_i0', `M${a} 70V77`) + B(2, 1, a, 86, 'Q1') + W('u2_w_i1', `M${b} 70V77`) + B(2, 3, b, 86, 'Q3')
+    + W('u2_w_i0', `M${a} 70V77`) + B(2, 1, a, 86, 'CB1') + W('u2_w_i1', `M${b} 70V77`) + B(2, 3, b, 86, 'CB3')
     + UPS('u2_a', a, 100, 'UPS 1 · 10 kVA') + UPS('u2_b', b, 100, 'UPS 2 · 10 kVA')
-    + B(2, 2, a, 254, 'Q2') + B(2, 4, b, 254, 'Q4')
+    + B(2, 2, a, 254, 'CB2') + B(2, 4, b, 254, 'CB4')
     + W('u2_w_p0', `M${a} 263V277`) + W('u2_w_p1', `M${b} 263V277`)
     // de cada UPS a las dos entradas que alimenta (cada una con su automático): la propia A y la B del otro STS
-    + W('u2_w_a0', `M${a} 277V${yQ - 9}`) + W('u2_w_a0b', `M${a} ${yQ + 9}V${yP}`) + B(2, 11, a, yQ, 'Q11')
-    + W('u2_w_x0', `M${a} 291H270V${yQ - 9}`) + W('u2_w_x0b', `M270 ${yQ + 9}V${yP}`) + B(2, 14, 270, yQ, 'Q14')
-    + W('u2_w_a1', `M${b} 277V${yQ - 9}`) + W('u2_w_a1b', `M${b} ${yQ + 9}V${yP}`) + B(2, 13, b, yQ, 'Q13')
-    + W('u2_w_x1', `M${b} 303H145V${yQ - 9}`) + W('u2_w_x1b', `M145 ${yQ + 9}V${yP}`) + B(2, 12, 145, yQ, 'Q12')
+    + W('u2_w_a0', `M${a} 277V${yQ - 9}`) + W('u2_w_a0b', `M${a} ${yQ + 9}V${yP}`) + B(2, 11, a, yQ, 'CB11')
+    + W('u2_w_x0', `M${a} 291H270V${yQ - 9}`) + W('u2_w_x0b', `M270 ${yQ + 9}V${yP}`) + B(2, 14, 270, yQ, 'CB14')
+    + W('u2_w_a1', `M${b} 277V${yQ - 9}`) + W('u2_w_a1b', `M${b} ${yQ + 9}V${yP}`) + B(2, 13, b, yQ, 'CB13')
+    + W('u2_w_x1', `M${b} 303H145V${yQ - 9}`) + W('u2_w_x1b', `M145 ${yQ + 9}V${yP}`) + B(2, 12, 145, yQ, 'CB12')
     + `<rect id="u2_s0" class="node" x="45" y="${yP}" width="115" height="${hS}" rx="4"/><text class="t" x="102" y="${yP + 14}">STS-1</text><text id="u2_s0_t" class="t" x="102" y="${yP + 27}">—</text>` + SW(0, 110, 75, 145)
     + `<rect id="u2_s1" class="node" x="255" y="${yP}" width="110" height="${hS}" rx="4"/><text class="t" x="310" y="${yP + 14}">STS-2</text><text id="u2_s1_t" class="t" x="310" y="${yP + 27}">—</text>` + SW(1, 295, 320, 270)
     + `<circle id="u2_pa0" class="dot" cx="${a}" cy="${yP}" r="4"/><circle id="u2_pb0" class="dot" cx="145" cy="${yP}" r="4"/><circle id="u2_pa1" class="dot" cx="${b}" cy="${yP}" r="4"/><circle id="u2_pb1" class="dot" cx="270" cy="${yP}" r="4"/>`
     + `<text class="l" x="80" y="${yP - 4}">A</text><text class="l" x="150" y="${yP - 4}">B</text><text class="l" x="325" y="${yP - 4}">A</text><text class="l" x="274" y="${yP - 4}">B</text>`
-    + W('u2_w_s0', `M102 ${yP + hS}V${yP + hS + 6}`) + W('u2_w_s1', `M310 ${yP + hS}V${yP + hS + 6}`) + B(2, 5, 102, yP + hS + 15, 'Q5') + B(2, 6, 310, yP + hS + 15, 'Q6')
+    + W('u2_w_s0', `M102 ${yP + hS}V${yP + hS + 6}`) + W('u2_w_s1', `M310 ${yP + hS}V${yP + hS + 6}`) + B(2, 5, 102, yP + hS + 15, 'CB5') + B(2, 6, 310, yP + hS + 15, 'CB6')
     + W('u2_w_l0', `M102 ${yP + hS + 24}V${yP + hS + 34 + DC}`) + W('u2_w_l1', `M310 ${yP + hS + 24}V${yP + hS + 34 + DC}`)
-    // bypass de cada STS: de la salida de su UPS (aguas abajo de Q2 / Q4) directo a la carga
-    + W('u2_by0a', `M${a} 270H18V${yP + 36}`) + B(2, 7, 18, yP + 45, 'Q7 Bypass STS-1', true) + W('u2_by0b', `M18 ${yP + 54}V${yP + hS + 24 + DC}H102`)
-    + W('u2_by1a', `M${b} 270H380V${yP + 36}`) + B(2, 8, 380, yP + 45, 'Q8 Bypass STS-2') + W('u2_by1b', `M380 ${yP + 54}V${yP + hS + 24 + DC}H310`)
-    // rodeo de cada UPS (bypass de mantención): de la red, antes de la entrada de la UPS, a su salida aguas abajo de Q2 / Q4; con su contacto auxiliar adelantado
-    + W('u2_rd0a', `M${a} 70H-30V159`) + B(2, 9, -30, 168, 'Q9 Rodeo UPS 1', true) + `<g id="u2_aux0"><text class="l" x="-43" y="183" text-anchor="end">Aux. adelantado</text><text class="l" x="-43" y="194" text-anchor="end">→ UPS 1</text></g>` + W('u2_rd0b', `M-30 177V270H${a}`)
-    + W('u2_rd1a', `M${b} 70H425V159`) + B(2, 10, 425, 168, 'Q10 Rodeo UPS 2') + `<g id="u2_aux1"><text class="l" x="438" y="183">Aux. adelantado</text><text class="l" x="438" y="194">→ UPS 2</text></g>` + W('u2_rd1b', `M425 177V270H${b}`)
+    // bypass de cada STS: de la salida de su UPS (aguas abajo de CB2 / CB4) directo a la carga
+    + W('u2_by0a', `M${a} 270H18V${yP + 36}`) + B(2, 7, 18, yP + 45, 'CB7 Bypass STS-1', true) + W('u2_by0b', `M18 ${yP + 54}V${yP + hS + 24 + DC}H102`)
+    + W('u2_by1a', `M${b} 270H380V${yP + 36}`) + B(2, 8, 380, yP + 45, 'CB8 Bypass STS-2') + W('u2_by1b', `M380 ${yP + 54}V${yP + hS + 24 + DC}H310`)
+    // rodeo de cada UPS (bypass de mantención): de la red, antes de la entrada de la UPS, a su salida aguas abajo de CB2 / CB4; con su contacto auxiliar adelantado
+    + W('u2_rd0a', `M${a} 70H-30V159`) + B(2, 9, -30, 168, 'CB9 Rodeo UPS 1', true) + `<g id="u2_aux0"><text class="l" x="-43" y="183" text-anchor="end">Aux. adelantado</text><text class="l" x="-43" y="194" text-anchor="end">→ UPS 1</text></g>` + W('u2_rd0b', `M-30 177V270H${a}`)
+    + W('u2_rd1a', `M${b} 70H425V159`) + B(2, 10, 425, 168, 'CB10 Rodeo UPS 2') + `<g id="u2_aux1"><text class="l" x="438" y="183">Aux. adelantado</text><text class="l" x="438" y="194">→ UPS 2</text></g>` + W('u2_rd1b', `M425 177V270H${b}`)
     + N('u2_l0', 27, yP + hS + 34 + DC, 150, 20, 'CARGA 1') + N('u2_l1', 235, yP + hS + 34 + DC, 150, 20, 'CARGA 2')
     + X('u2_xl0', 23, yP + hS + 30 + DC, 181, yP + hS + 58 + DC) + X('u2_xl1', 231, yP + hS + 30 + DC, 389, yP + hS + 58 + DC);
 })();
@@ -159,8 +160,8 @@ function marcarAutomaticos(c, Q) {
 
 /* ---------- panel lateral ---------- */
 const NOMBRES = {
-  1: ['Q0 · General de red', 'Q1 · Entrada UPS A', 'Q2 · Salida UPS A', 'Q3 · Entrada UPS B', 'Q4 · Salida UPS B', 'Q5 · Rodeo UPS A (red → punto entre Q2 y Q3)', 'Q6 · Rodeo UPS B (punto entre Q2 y Q3 → carga)'],
-  2: ['Q0 · General de red', 'Q1 · Entrada UPS 1', 'Q2 · Salida UPS 1', 'Q3 · Entrada UPS 2', 'Q4 · Salida UPS 2', 'Q5 · Salida STS-1 (Carga 1)', 'Q6 · Salida STS-2 (Carga 2)', 'Q7 · Bypass STS-1 (UPS 1 → Carga 1)', 'Q8 · Bypass STS-2 (UPS 2 → Carga 2)', 'Q9 · Rodeo UPS 1 (red → salida UPS 1)', 'Q10 · Rodeo UPS 2 (red → salida UPS 2)', 'Q11 · Entrada A del STS-1', 'Q12 · Entrada B del STS-1', 'Q13 · Entrada A del STS-2', 'Q14 · Entrada B del STS-2'],
+  1: ['CB0 · General de red', 'CB1 · Entrada UPS A', 'CB2 · Salida UPS A', 'CB3 · Entrada UPS B', 'CB4 · Salida UPS B', 'CB5 · Rodeo UPS A (red → punto entre CB2 y CB3)', 'CB6 · Rodeo UPS B (punto entre CB2 y CB3 → carga)'],
+  2: ['CB0 · General de red', 'CB1 · Entrada UPS 1', 'CB2 · Salida UPS 1', 'CB3 · Entrada UPS 2', 'CB4 · Salida UPS 2', 'CB5 · Salida STS-1 (Carga 1)', 'CB6 · Salida STS-2 (Carga 2)', 'CB7 · Bypass STS-1 (UPS 1 → Carga 1)', 'CB8 · Bypass STS-2 (UPS 2 → Carga 2)', 'CB9 · Rodeo UPS 1 (red → salida UPS 1)', 'CB10 · Rodeo UPS 2 (red → salida UPS 2)', 'CB11 · Entrada A del STS-1', 'CB12 · Entrada B del STS-1', 'CB13 · Entrada A del STS-2', 'CB14 · Entrada B del STS-2'],
 };
 
 const slider = (id, rot, max, val) => `<div style="margin-top:8px"><div class="row" style="justify-content:space-between"><span>${rot}</span><b id="${id}_v">${val.toFixed(1)} kVA</b></div><input type="range" id="${id}" min="0" max="${max}" step="0.1" value="${val}"></div>`;
@@ -187,7 +188,7 @@ ${n === 2 ? [0, 1].map(j => `<div class="cmd"><span class="note">STS-${j + 1} ·
 const PANEL = `
 <div id="sonP1" hidden><div class="cols">
   <div class="col">
-    <section><h2>Automáticos</h2>${filas(1)}</section>
+    <section><h2>CB</h2>${filas(1)}</section>
     <section><h2>Red y carga</h2>
       <label class="sw"><span>Red eléctrica presente<small>Apáguela para simular un corte</small></span><input type="checkbox" id="c1_mains" checked></label>
       ${slider('c1_load', 'Carga conectada (máx. 6 kVA)', 9, SC.c1.load)}
@@ -203,7 +204,7 @@ const PANEL = `
 </div></div>
 <div id="sonP2" hidden><div class="cols">
   <div class="col">
-    <section><h2>Automáticos</h2>${filas(2)}</section>
+    <section><h2>CB</h2>${filas(2)}</section>
     <section><h2>Red y cargas</h2>
       <label class="sw"><span>Red eléctrica presente<small>Apáguela para simular un corte</small></span><input type="checkbox" id="c2_mains" checked></label>
       ${slider('c2_l0', 'Carga 1 (STS-1)', 15, SC.c2.load[0])}${slider('c2_l1', 'Carga 2 (STS-2)', 15, SC.c2.load[1])}
@@ -223,6 +224,7 @@ const PANEL = `
 export function iniciarUi(alCambiar) {
   const panel = $('#panel');
   panel.insertAdjacentHTML('beforeend', `<div id="sonPanel">${PANEL}</div>`);
+  for (const n of [1, 2]) armarPestanas($(`#sonP${n} > .cols`));
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.id = 'sonUni'; svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   svg.innerHTML = `<g id="sonU1">${UNI1}</g><g id="sonU2">${UNI2}</g>`;
@@ -291,13 +293,13 @@ function textoModo(r) {
 
 function alarmas1(r) {
   const s = SC.c1, Q = s.Q, al = [], nom = ['A', 'B'];
-  if (!SC.mains) alarma(al, 'Falla de red eléctrica', 'bad'); else if (!Q[0]) alarma(al, 'General abierto (Q0): sin tensión en las UPS', 'bad');
-  if (r.gen && !Q[1]) alarma(al, 'Entrada UPS A abierta (Q1)', 'bad');
-  if (!Q[2]) alarma(al, 'Salida UPS A abierta (Q2): aislada del punto de unión', 'bad');
-  if (!Q[3]) alarma(al, 'Entrada UPS B abierta (Q3): aislada del punto de unión', 'bad');
-  if (!Q[4]) alarma(al, 'Salida UPS B abierta (Q4): aislada de la carga', 'bad');
-  if (Q[5]) alarma(al, r.gen ? 'Rodeo de la UPS A cerrado (Q5): la red alimenta directo el punto entre Q2 y Q3, por fuera de la UPS A' : 'Rodeo de la UPS A cerrado (Q5), pero no hay tensión de red', r.gen ? '' : 'bad');
-  if (Q[6]) alarma(al, r.w.mid ? 'Rodeo de la UPS B cerrado (Q6): la carga cuelga directo del punto entre Q2 y Q3, por fuera de la UPS B' : 'Rodeo de la UPS B cerrado (Q6), pero no llega tensión', r.w.mid ? '' : 'bad');
+  if (!SC.mains) alarma(al, 'Falla de red eléctrica', 'bad'); else if (!Q[0]) alarma(al, 'General abierto (CB0): sin tensión en las UPS', 'bad');
+  if (r.gen && !Q[1]) alarma(al, 'Entrada UPS A abierta (CB1)', 'bad');
+  if (!Q[2]) alarma(al, 'Salida UPS A abierta (CB2): aislada del punto de unión', 'bad');
+  if (!Q[3]) alarma(al, 'Entrada UPS B abierta (CB3): aislada del punto de unión', 'bad');
+  if (!Q[4]) alarma(al, 'Salida UPS B abierta (CB4): aislada de la carga', 'bad');
+  if (Q[5]) alarma(al, r.gen ? 'Rodeo de la UPS A cerrado (CB5): la red alimenta directo el punto entre CB2 y CB3, por fuera de la UPS A' : 'Rodeo de la UPS A cerrado (CB5), pero no hay tensión de red', r.gen ? '' : 'bad');
+  if (Q[6]) alarma(al, r.w.mid ? 'Rodeo de la UPS B cerrado (CB6): la carga cuelga directo del punto entre CB2 y CB3, por fuera de la UPS B' : 'Rodeo de la UPS B cerrado (CB6), pero no llega tensión', r.w.mid ? '' : 'bad');
   r.u.forEach((x, i) => {
     const n = nom[i];
     if (x.mode === 'falla') alarma(al, `FALLA en la UPS ${n}: fuera de servicio`, 'bad');
@@ -313,29 +315,29 @@ function alarmas1(r) {
 
 function alarmas2(r) {
   const s = SC.c2, Q = s.Q, al = [];
-  if (!SC.mains) alarma(al, 'Falla de red eléctrica', 'bad'); else if (!Q[0]) alarma(al, 'General abierto (Q0): sin tensión en las UPS', 'bad');
+  if (!SC.mains) alarma(al, 'Falla de red eléctrica', 'bad'); else if (!Q[0]) alarma(al, 'General abierto (CB0): sin tensión en las UPS', 'bad');
   r.u.forEach((x, i) => {
     const n = i + 1;
     if (x.mode === 'falla') alarma(al, `FALLA en la UPS ${n}: los STS pasan a la UPS ${3 - n}`, 'bad');
-    if (r.gen && !Q[2 * i + 1]) alarma(al, `Entrada UPS ${n} abierta (Q${2 * i + 1})`, 'bad');
-    if (!Q[2 * i + 2]) alarma(al, `Salida UPS ${n} abierta (Q${2 * i + 2}): los STS pasan a la UPS ${3 - n}`, 'bad');
+    if (r.gen && !Q[2 * i + 1]) alarma(al, `Entrada UPS ${n} abierta (CB${2 * i + 1})`, 'bad');
+    if (!Q[2 * i + 2]) alarma(al, `Salida UPS ${n} abierta (CB${2 * i + 2}): los STS pasan a la UPS ${3 - n}`, 'bad');
     if (x.mode === 'bateria') alarma(al, `UPS ${n} funcionando con baterías (${Math.round(s.soc[i])} %)${s.soc[i] < 20 ? ' · batería baja' : ''}`, s.soc[i] < 20 ? 'bad' : '');
     if (s.byp[i] && x.mode === 'bypass') alarma(al, `UPS ${n} en bypass estático (ordenado): sin respaldo de baterías`, '');
     if (s.byp[i] && x.mode === 'apagada') alarma(al, `UPS ${n} en bypass sin tensión de entrada: no entrega a los STS`, 'bad');
     if (x.over) alarma(al, x.mode === 'bypass' ? `Sobrecarga en la UPS ${n} (${x.visto.toFixed(1)} de ${x.kva} kVA): ${s.byp[i] ? 'en bypass' : 'transferida a bypass'}` : x.mode === 'bateria' ? `Sobrecarga en la UPS ${n} (${Math.round(x.visto / x.kva * 100)} %): la sostiene con baterías; sobre el 115 % corta la carga` : `Sobrecarga en la UPS ${n}: apagada, carga cortada (sobre el 115 % sin tensión de entrada)`, 'bad');
   });
-  [0, 1].forEach(i => { if (Q[9 + i]) alarma(al, r.gen ? `Rodeo de la UPS ${i + 1} cerrado (Q${9 + i}): la red alimenta directo la salida de la UPS ${i + 1} (aguas abajo de Q${2 * i + 2}), por fuera de la UPS ${i + 1}` : `Rodeo de la UPS ${i + 1} cerrado (Q${9 + i}), pero no hay tensión de red`, r.gen ? '' : 'bad'); });
+  [0, 1].forEach(i => { if (Q[9 + i]) alarma(al, r.gen ? `Rodeo de la UPS ${i + 1} cerrado (CB${9 + i}): la red alimenta directo la salida de la UPS ${i + 1} (aguas abajo de CB${2 * i + 2}), por fuera de la UPS ${i + 1}` : `Rodeo de la UPS ${i + 1} cerrado (CB${9 + i}), pero no hay tensión de red`, r.gen ? '' : 'bad'); });
   if (r.sinRedund) alarma(al, `Redundancia perdida: las cargas suman ${r.encendida.toFixed(1)} kVA, más de lo que puede sostener una sola UPS (${KVA[2]} kVA). Si una UPS deja de entregar, la otra quedará en sobrecarga`, 'bad');
   r.sts.forEach((t, j) => {
     if (t.falla) alarma(al, `FALLA en el STS-${j + 1}: fuera de servicio, la carga ${j + 1} ${t.byp ? 'sigue por su bypass' : 'quedó sin energía (cierre su bypass Q' + (7 + j) + ')'}`, 'bad');
     if (t.sel === 'B') alarma(al, t.pref === 'B' ? `STS-${j + 1} en su fuente B (UPS ${2 - j}) por transferencia manual` : `STS-${j + 1} transfirió a su fuente B (UPS ${2 - j}): perdió la fuente A`, '');
     if (t.sel === 'A' && t.pref === 'B') alarma(al, `STS-${j + 1} volvió a su fuente A: la fuente B no está disponible`, '');
-    if (!Q[11 + 2 * j] && r.gen) alarma(al, `Entrada A del STS-${j + 1} abierta (Q${11 + 2 * j}): el STS depende de su fuente B`, t.b ? '' : 'bad');
-    if (!Q[12 + 2 * j] && r.gen) alarma(al, `Entrada B del STS-${j + 1} abierta (Q${12 + 2 * j}): el STS pierde su fuente de respaldo`, '');
-    if (t.byp) alarma(al, `Bypass del STS-${j + 1} cerrado (Q${7 + j}): la carga ${j + 1} cuelga directo de la UPS ${j + 1}, por fuera del STS-${j + 1}`, '');
-    if (t.conflicto) alarma(al, `Bypass del STS-${j + 1} cerrado mientras el STS entrega desde la UPS ${2 - j}: dos salidas de UPS distintas unidas sin sincronizar. Abra Q${5 + j} o el bypass`, 'bad');
+    if (!Q[11 + 2 * j] && r.gen) alarma(al, `Entrada A del STS-${j + 1} abierta (CB${11 + 2 * j}): el STS depende de su fuente B`, t.b ? '' : 'bad');
+    if (!Q[12 + 2 * j] && r.gen) alarma(al, `Entrada B del STS-${j + 1} abierta (CB${12 + 2 * j}): el STS pierde su fuente de respaldo`, '');
+    if (t.byp) alarma(al, `Bypass del STS-${j + 1} cerrado (CB${7 + j}): la carga ${j + 1} cuelga directo de la UPS ${j + 1}, por fuera del STS-${j + 1}`, '');
+    if (t.conflicto) alarma(al, `Bypass del STS-${j + 1} cerrado mientras el STS entrega desde la UPS ${2 - j}: dos salidas de UPS distintas unidas sin sincronizar. Abra CB${5 + j} o el bypass`, 'bad');
     if (t.sel === null && !t.byp && !t.falla) alarma(al, `STS-${j + 1} sin fuentes: la carga ${j + 1} quedó sin energía`, 'bad');
-    if (!t.q && !t.byp) alarma(al, `Salida STS-${j + 1} abierta (Q${5 + j}): la carga ${j + 1} quedó sin energía`, 'bad');
+    if (!t.q && !t.byp) alarma(al, `Salida STS-${j + 1} abierta (CB${5 + j}): la carga ${j + 1} quedó sin energía`, 'bad');
   });
   return al;
 }

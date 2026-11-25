@@ -13,6 +13,7 @@ import { tween } from '../core/tween.js';
 import { S, E } from '../state.js';
 import { setExtIn, setExtOut, setExtBypass } from '../logic/actions.js';
 import { syncSwitches } from '../ui/sync.js';
+import { agregarAPestana, verPestana, compactar } from '../ui/pestanas.js';
 import { loadGroup, cableMesh } from '../model/load.js';
 import { sinEsferas, SC as ESCALA, MOD, LEVER_ANGLE } from '../model/breakerPanel.js';
 import { build as buildPieza, P as POLO } from '../../tablero/modelos.js';
@@ -255,10 +256,11 @@ export function refrescarExterno() {
 }
 
 /* ---------- cuadro del panel ---------- */
+const PESTANA = 'Tablero ext.';
 const fila = (id, titulo) => `<label class="sw"><span>${titulo}<small id="${id}_s"></small></span><input type="checkbox" id="${id}"></label>`;
 
 export function iniciarExterno() {
-  $('#panel').insertAdjacentHTML('beforeend', `<section id="sonExt" hidden>
+  $('#panel').insertAdjacentHTML('beforeend', `<section id="sonExt">
     <h2>Tablero externo de bypass</h2>
     ${fila('ext_in', 'CB8 · Entrada (aguas arriba de CB5)')}
     ${fila('ext_byp', 'CB9 · Bypass externo (aguas abajo de CB8 → aguas arriba de CB10)')}
@@ -272,6 +274,11 @@ export function iniciarExterno() {
   $('#ext_out').addEventListener('change', e => setExtOut(e.target.checked));
   $('#ext_cub').addEventListener('change', e => setCubierta(!e.target.checked));              // verde = cerrada, como los demás interruptores de puertas y cubiertas
   $('#ext_cub').checked = true;
+  const base = window.__panelBase, sec = $('#sonExt');
+  base.estado.appendChild($('#ext_al'));                       // sus alarmas quedan siempre a la vista, con el estado
+  compactar(sec);
+  agregarAPestana(base, PESTANA, sec);
+  verPestana(base, PESTANA, false);
 }
 
 /** Activa (true) o desactiva el tablero externo: estado, unifilar, 3D y cuadro del panel. */
@@ -280,6 +287,7 @@ export function activarExterno(on) {
   abierta = false; puerta.rotation.y = 0;                       // la cubierta parte cerrada
   mostrarExterno(on);
   unifilarExterno(on);
-  $('#sonExt').hidden = !on;
+  verPestana(window.__panelBase, PESTANA, on);
+  $('#ext_al').hidden = !on;
   syncSwitches();                                              // vuelve a calcular el tamaño del diagrama
 }

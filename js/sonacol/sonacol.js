@@ -14,10 +14,10 @@ import { iniciarUi, mostrarUi, refrescarUi, alternar, ordenarModo } from './ui.j
 import { gExt, iniciarExterno, activarExterno, aplicarExterno, refrescarExterno } from './externo.js';
 
 const CIRCUITOS = {
-  1: { ruta: 'circuito-1', boton: 'Circuito 1 · 2 UPS en serie (6 kVA)', titulo: '2 UPS de 6 kVA en serie', sub: 'Circuito 1 · RED → UPS A → UPS B → carga regulable (máx. 6 kVA) · 220–240 VAC' },
-  2: { ruta: 'circuito-2', boton: 'Circuito 2 · 2 UPS de 10 kVA con 2 STS', titulo: '2 UPS de 10 kVA con 2 STS', sub: 'Circuito 2 · 2 UPS cruzadas con 2 STS (fuentes A y B) y 2 cargas · 220–240 VAC' },
-  3: { ruta: 'circuito-3', boton: 'Circuito 3 · Paralelo con bypass de rodeo', titulo: 'Paralelo redundante', sub: 'Circuito 3 · 2 UPS de 10 kVA en paralelo redundante (N+1) con bypass de rodeo · 220–240 VAC' },
-  4: { ruta: 'circuito-4', boton: 'Circuito 4 · Paralelo con bypass de tablero externo', titulo: 'Paralelo redundante con tablero externo', sub: 'Circuito 4 · el circuito 3 más un tablero externo de bypass: entrada (CB8), bypass externo (CB9) y salida (CB10) · 220–240 VAC' },
+  1: { ruta: 'circuito-1', corto: '1 · Serie', boton: 'Circuito 1 · 2 UPS en serie (6 kVA)', titulo: '2 UPS de 6 kVA en serie', sub: 'Circuito 1 · RED → UPS A → UPS B → carga regulable (máx. 6 kVA) · 220–240 VAC' },
+  2: { ruta: 'circuito-2', corto: '2 · STS', boton: 'Circuito 2 · 2 UPS de 10 kVA con 2 STS', titulo: '2 UPS de 10 kVA con 2 STS', sub: 'Circuito 2 · 2 UPS cruzadas con 2 STS (fuentes A y B) y 2 cargas · 220–240 VAC' },
+  3: { ruta: 'circuito-3', corto: '3 · Rodeo', boton: 'Circuito 3 · Paralelo con bypass de rodeo', titulo: 'Paralelo redundante', sub: 'Circuito 3 · 2 UPS de 10 kVA en paralelo redundante (N+1) con bypass de rodeo · 220–240 VAC' },
+  4: { ruta: 'circuito-4', corto: '4 · Tablero ext.', boton: 'Circuito 4 · Paralelo con bypass de tablero externo', titulo: 'Paralelo redundante con tablero externo', sub: 'Circuito 4 · el circuito 3 más un tablero externo de bypass: entrada (CB8), bypass externo (CB9) y salida (CB10) · 220–240 VAC' },
 };
 
 /* lo que ya está en la escena (circuito 3): se oculta con los otros circuitos; quedan siempre el piso, la cuadrícula y las luces */
@@ -32,7 +32,7 @@ $('.modesel').style.display = 'none';
 /* selector de circuito, arriba del panel */
 const barra = document.createElement('div');
 barra.className = 'circuitos';
-barra.innerHTML = '<span>Circuito:</span><div class="circ-botones">' + Object.entries(CIRCUITOS).map(([n, c]) => `<button type="button" class="sm" data-circ="${n}">${c.boton}</button>`).join('') + '</div>';
+barra.innerHTML = '<span>Circuito:</span><div class="circ-botones">' + Object.entries(CIRCUITOS).map(([n, c]) => `<button type="button" class="sm" data-circ="${n}" title="${c.boton}">${c.corto}</button>`).join('') + '</div>';
 $('#panel header').prepend(barra);
 barra.querySelectorAll('button').forEach(b => b.addEventListener('click', () => elegir(+b.dataset.circ)));
 
@@ -64,6 +64,7 @@ function elegir(n) {
   if (!c3) mostrarUi(n);
   $('#panel header h1').textContent = CIRCUITOS[n].titulo;
   $('#panel header p').textContent = CIRCUITOS[n].sub;
+  $('#panel header h1').title = CIRCUITOS[n].sub;
   const ruta = `#/sonacol/${CIRCUITOS[n].ruta}`;
   if (location.hash !== ruta) history.replaceState(null, '', location.pathname + location.search + ruta);
   pendiente = true; acc = 1;

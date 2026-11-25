@@ -1,6 +1,7 @@
 /* Gestión de cuentas (solo para el perfil administrador): crear usuarios, cambiar claves y accesos, y quitar usuarios.
    Todo se guarda en el servidor (api/usuarios) y vale al instante para todos; aquí nunca se ve ni se guarda ninguna clave. */
 import { cabeceras } from './verificar.js';
+import { ponerOjo } from './ui/verClave.js';
 
 const ACCESOS = { oxiquim: 'OXIQUIM', sonacol: 'SONACOL', todos: 'Todos los clientes', admin: 'Administrador (todo y cuentas)' };
 const $ = (s, r = document) => r.querySelector(s);
@@ -76,6 +77,7 @@ function crear() {
   $('#cuentasCerrar').addEventListener('click', () => { modal.hidden = true; });
   modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
   $('#cuentasForm').addEventListener('submit', guardar);
+  ponerOjo($('#cuentaClave'));
 }
 
 export function abrirCuentas() {

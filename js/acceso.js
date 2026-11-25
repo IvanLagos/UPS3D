@@ -1,6 +1,7 @@
 /* Acceso: la simulación solo se carga después de ingresar un usuario y una clave válidos (los verifica el servidor: ver verificar.js y cuentas_api.py). */
 import { ingresar, sesionValida, cerrarSesion } from './verificar.js';
 import { CLIENTES, rutaDe, clienteDeRuta } from './clientes.js';
+import { ponerOjo } from './ui/verClave.js';
 
 const $ = s => document.querySelector(s);
 const CON_TODO = ['todos', 'admin'];                                    // perfiles que ven todos los clientes y el editor de tableros
@@ -86,6 +87,7 @@ async function abrir(cliente) {
 function pedirClave() {
   $('#acceso').classList.remove('verificando');                 // ahora sí hace falta la clave: se muestra el formulario
   const form = $('#accesoForm'), usuario = $('#accesoUsuario'), clave = $('#accesoClave'), msg = $('#accesoMsg');
+  ponerOjo(clave);
   usuario.focus();
   form.addEventListener('submit', async e => {
     e.preventDefault();

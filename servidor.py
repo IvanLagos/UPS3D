@@ -130,6 +130,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 http.server.ThreadingHTTPServer.daemon_threads = True
+http.server.ThreadingHTTPServer.request_queue_size = 128          # la página pide unos 40 archivos a la vez (por defecto solo esperan 5 conexiones)
 with http.server.ThreadingHTTPServer(('0.0.0.0' if PRODUCCION else '', PUERTO), Handler) as httpd:
     print(f'UPS Modular 3D en http://localhost:{PUERTO}/  (Ctrl+C para detener)')
     httpd.serve_forever()

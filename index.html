@@ -6,7 +6,28 @@
 <title>Fernández Fica · UPS Modular 3D</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="stylesheet" href="css/styles.css?v=b5466ab1">
+<script>
+/* Si algún archivo no llega (fallo pasajero del hosting o de la red), la página se recarga sola hasta 3 veces sin quitar la pantalla de carga;
+   si sigue fallando, muestra el motivo y un botón para reintentar. */
+(function () {
+  var CLAVE = 'ups3d-carga', saliendo = false;
+  addEventListener('beforeunload', function () { saliendo = true; });          // al salir o recargar, las descargas cortadas no son un fallo
+  addEventListener('pagehide', function () { saliendo = true; });
+  window.__cargaLista = function () { try { sessionStorage.removeItem(CLAVE); } catch (e) {} };
+  window.__reintentar = function (motivo) {
+    if (saliendo) return;
+    var n = 3;
+    try { n = +sessionStorage.getItem(CLAVE) || 0; if (n < 3) sessionStorage.setItem(CLAVE, n + 1); } catch (e) {}
+    if (n < 3) { setTimeout(function () { location.reload(); }, 800 * (n + 1)); return; }
+    var a = document.getElementById('acceso'); if (!a) return;
+    a.classList.remove('verificando');
+    a.innerHTML = '<div id="cargando"><img src="assets/logo-fernandez-fica.png" alt="Fernández Fica"><p style="animation:none;text-align:center;max-width:420px"></p><button type="button" class="primary">Reintentar</button></div>';
+    a.querySelector('p').textContent = 'No se pudo cargar la página. Revise su conexión y reintente.' + (motivo ? ' (' + motivo + ')' : '');
+    a.querySelector('button').onclick = function () { window.__cargaLista(); location.reload(); };
+  };
+})();
+</script>
+<link rel="stylesheet" href="css/styles.css?v=3267dedc" onerror="__reintentar('no llegaron los estilos')">
 </head>
 <body class="bloqueado">
 <div id="acceso" class="verificando">
@@ -48,6 +69,93 @@
       <button class="sm expandbtn" id="btnExpand3d" title="Expandir la simulación a pantalla completa (Esc para cerrar)">⤢ Expandir</button>
       <div id="hint">Arrastre para girar · rueda para acercar · clic en puertas, módulos y automáticos para operarlos</div>
     </div>
+  <aside id="panel">
+    <header>
+      <h1>Paralelo redundante</h1>
+      <p>Modelo provisional · 2 UPS de 10 kVA en paralelo redundante (N+1) · 220–240 VAC</p>
+    </header>
+
+    <details class="montaje">
+      <summary title="Mostrar u ocultar el montaje y desmontaje de las UPS">Montaje de las UPS</summary>
+      <div class="row">
+        <button id="btnMontar" class="primary huge grow">Montar UPS</button>
+        <button id="btnDesmontar" class="warnbtn huge grow">Desmontar UPS</button>
+      </div>
+      <p class="note">Secuencia automática que maniobra los automáticos sin botar la carga. Con la puerta frontal abierta también puede hacer clic en una UPS o un banco para extraerlo; <b>Ctrl+clic</b> lo retira por completo.</p>
+    </details>
+
+    <div class="cols">
+      <div class="col">
+        <section>
+          <h2>Automáticos</h2>
+          <div id="breakerRows"></div>
+          <div class="selrow"><span>Conmutador bypass<small>1 = UPS · 0 = corte · 2 = red</small></span>
+            <div class="seg"><button class="sm" data-sel="1">1 · UPS</button><button class="sm" data-sel="0">0 · Corte</button><button class="sm" data-sel="2">2 · Red</button></div></div>
+        </section>
+        <section>
+          <h2>Red y carga</h2>
+          <label class="sw"><span>Red eléctrica presente<small>Apáguela para simular un corte</small></span><input type="checkbox" id="swMains" checked></label>
+          <div style="margin-top:8px">
+            <div class="row" style="justify-content:space-between"><span>Carga conectada</span><b id="loadVal">8 kW</b></div>
+            <input type="range" id="load" min="0" max="30" step="1" value="8">
+          </div>
+        </section>
+        <section>
+          <h2>Rack y cámara</h2>
+          <label class="sw"><span>Puerta frontal cerrada</span><input type="checkbox" id="swFront"></label>
+          <label class="sw"><span>Puerta trasera cerrada</span><input type="checkbox" id="swRear"></label>
+          <label class="sw"><span>Laterales cerrados</span><input type="checkbox" id="swSides"></label>
+          <label class="sw"><span>Cubiertas del tablero cerradas<small>Para abrirlas, abra antes la puerta frontal</small></span><input type="checkbox" id="swCover"></label>
+          <div class="row" style="margin-top:8px">
+            <button class="sm cam" data-cam="front">Frente</button>
+            <button class="sm cam" data-cam="iso">Interior</button>
+            <button class="sm cam" data-cam="side">Lateral</button>
+            <button class="sm cam" data-cam="top">Superior</button>
+            <button class="sm" id="btnShot">Captura PNG</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="sm" id="btnOrdenarCables" title="Reparte los cables del tablero para que no se toquen">Ordenar cables del tablero</button>
+            <button class="sm" id="btnRestCables" title="Vuelve los cables a su recorrido original">Deshacer orden manual</button>
+          </div>
+          <p class="note" style="margin:6px 0 0">Con las cubiertas abiertas, tome un cable de la sección que quiera y arrástrelo para ordenarlo a mano.</p>
+        </section>
+      </div>
+
+      <div class="col">
+        <section>
+          <h2>Comandos de las UPS</h2>
+          <div class="cmd"><span class="note">Modo del sistema</span>
+            <div class="row"><button class="sm" id="btnInv">Inversor</button><button class="sm" id="btnByp">Bypass estático</button></div></div>
+          <div class="cmd"><span class="note">Traspasar carga (stand by)</span>
+            <div class="row"><button class="sm" id="btnT0">UPS 1 → UPS 2</button><button class="sm" id="btnT1">UPS 2 → UPS 1</button></div></div>
+          <div class="cmd"><span class="note">Bancos en uso (botón BAT de la UPS)</span>
+            <div class="row"><button class="sm" id="btnC0">UPS 1: 2 bancos</button><button class="sm" id="btnC1">UPS 2: 2 bancos</button></div></div>
+        </section>
+        <section>
+          <h2>Simular fallas</h2>
+          <div class="cmd"><span class="note">UPS</span>
+            <div class="row"><button class="sm" id="btnF0">Falla UPS 1</button><button class="sm" id="btnF1">Falla UPS 2</button></div></div>
+          <div class="cmd"><span class="note">Bancos de baterías</span>
+            <div class="row">
+              <button class="sm" id="btnB00">UPS 1 · B1</button><button class="sm" id="btnB01">UPS 1 · B2</button>
+              <button class="sm" id="btnB10">UPS 2 · B1</button><button class="sm" id="btnB11">UPS 2 · B2</button>
+            </div></div>
+        </section>
+        <section>
+          <h2>Estado</h2>
+          <div class="metrics">
+            <div class="metric"><span>Modo</span><b id="mMode">—</b></div>
+            <div class="metric"><span>Capacidad</span><b id="mCap">—</b></div>
+            <div class="metric"><span>Batería</span><b id="mSoc">—</b></div>
+            <div class="metric"><span>Autonomía</span><b id="mAut">—</b></div>
+          </div>
+          <ul id="alarms"></ul>
+          <p class="note">Simulación acelerada: 1 segundo real = 1 minuto de funcionamiento.</p>
+        </section>
+      </div>
+    </div>
+  </aside>
+  </div>
     <section id="unifilar">
       <div class="uhead">
         <h2>Diagrama unifilar</h2>
@@ -155,126 +263,14 @@
       </svg>
       <div id="avisoRedund" hidden title="La carga supera lo que puede sostener una sola UPS: si una deja de entregar, la otra queda en sobrecarga">⚠ Pérdida de redundancia</div>
     </section>
-  </div>
-
-  <aside id="panel">
-    <header>
-      <h1>Paralelo redundante</h1>
-      <p>Modelo provisional · 2 UPS de 10 kVA en paralelo redundante (N+1) · 220–240 VAC</p>
-    </header>
-
-    <details class="montaje">
-      <summary title="Mostrar u ocultar el montaje y desmontaje de las UPS">Montaje de las UPS</summary>
-      <div class="row">
-        <button id="btnMontar" class="primary huge grow">Montar UPS</button>
-        <button id="btnDesmontar" class="warnbtn huge grow">Desmontar UPS</button>
-      </div>
-      <p class="note">Secuencia automática que maniobra los automáticos sin botar la carga. Con la puerta frontal abierta también puede hacer clic en una UPS o un banco para extraerlo; <b>Ctrl+clic</b> lo retira por completo.</p>
-    </details>
-
-    <div class="cols">
-      <div class="col">
-        <section>
-          <h2>Automáticos</h2>
-          <div id="breakerRows"></div>
-          <div class="selrow"><span>Conmutador bypass<small>1 = UPS · 0 = corte · 2 = red</small></span>
-            <div class="seg"><button class="sm" data-sel="1">1 · UPS</button><button class="sm" data-sel="0">0 · Corte</button><button class="sm" data-sel="2">2 · Red</button></div></div>
-        </section>
-        <section>
-          <h2>Red y carga</h2>
-          <label class="sw"><span>Red eléctrica presente<small>Apáguela para simular un corte</small></span><input type="checkbox" id="swMains" checked></label>
-          <div style="margin-top:8px">
-            <div class="row" style="justify-content:space-between"><span>Carga conectada</span><b id="loadVal">8 kW</b></div>
-            <input type="range" id="load" min="0" max="30" step="1" value="8">
-          </div>
-        </section>
-        <section>
-          <h2>Rack y cámara</h2>
-          <label class="sw"><span>Puerta frontal cerrada</span><input type="checkbox" id="swFront"></label>
-          <label class="sw"><span>Puerta trasera cerrada</span><input type="checkbox" id="swRear"></label>
-          <label class="sw"><span>Laterales cerrados</span><input type="checkbox" id="swSides"></label>
-          <label class="sw"><span>Cubiertas del tablero cerradas<small>Para abrirlas, abra antes la puerta frontal</small></span><input type="checkbox" id="swCover"></label>
-          <div class="row" style="margin-top:8px">
-            <button class="sm cam" data-cam="front">Frente</button>
-            <button class="sm cam" data-cam="iso">Interior</button>
-            <button class="sm cam" data-cam="side">Lateral</button>
-            <button class="sm cam" data-cam="top">Superior</button>
-            <button class="sm" id="btnShot">Captura PNG</button>
-          </div>
-          <div class="row" style="margin-top:8px">
-            <button class="sm" id="btnOrdenarCables" title="Reparte los cables del tablero para que no se toquen">Ordenar cables del tablero</button>
-            <button class="sm" id="btnRestCables" title="Vuelve los cables a su recorrido original">Deshacer orden manual</button>
-          </div>
-          <p class="note" style="margin:6px 0 0">Con las cubiertas abiertas, tome un cable de la sección que quiera y arrástrelo para ordenarlo a mano.</p>
-        </section>
-      </div>
-
-      <div class="col">
-        <section>
-          <h2>Comandos de las UPS</h2>
-          <div class="cmd"><span class="note">Modo del sistema</span>
-            <div class="row"><button class="sm" id="btnInv">Inversor</button><button class="sm" id="btnByp">Bypass estático</button></div></div>
-          <div class="cmd"><span class="note">Traspasar carga (stand by)</span>
-            <div class="row"><button class="sm" id="btnT0">UPS 1 → UPS 2</button><button class="sm" id="btnT1">UPS 2 → UPS 1</button></div></div>
-          <div class="cmd"><span class="note">Bancos en uso (botón BAT de la UPS)</span>
-            <div class="row"><button class="sm" id="btnC0">UPS 1: 2 bancos</button><button class="sm" id="btnC1">UPS 2: 2 bancos</button></div></div>
-        </section>
-        <section>
-          <h2>Simular fallas</h2>
-          <div class="cmd"><span class="note">UPS</span>
-            <div class="row"><button class="sm" id="btnF0">Falla UPS 1</button><button class="sm" id="btnF1">Falla UPS 2</button></div></div>
-          <div class="cmd"><span class="note">Bancos de baterías</span>
-            <div class="row">
-              <button class="sm" id="btnB00">UPS 1 · B1</button><button class="sm" id="btnB01">UPS 1 · B2</button>
-              <button class="sm" id="btnB10">UPS 2 · B1</button><button class="sm" id="btnB11">UPS 2 · B2</button>
-            </div></div>
-        </section>
-        <section>
-          <h2>Estado</h2>
-          <div class="metrics">
-            <div class="metric"><span>Modo</span><b id="mMode">—</b></div>
-            <div class="metric"><span>Capacidad</span><b id="mCap">—</b></div>
-            <div class="metric"><span>Batería</span><b id="mSoc">—</b></div>
-            <div class="metric"><span>Autonomía</span><b id="mAut">—</b></div>
-          </div>
-          <ul id="alarms"></ul>
-          <p class="note">Simulación acelerada: 1 segundo real = 1 minuto de funcionamiento.</p>
-        </section>
-      </div>
-    </div>
-  </aside>
 </div>
 
-<script>
-/* Si el 3D no arranca (p. ej. archivos viejos en la caché del navegador tras una actualización), recarga una vez
-   saltándose la caché y, si sigue fallando, muestra el motivo en pantalla. */
-(function () {
-  var motivo = '';
-  function mostrar() {
-    if (window.__appStarted || document.getElementById('fallo')) return;
-    var d = document.createElement('div'); d.id = 'fallo';
-    d.innerHTML = '<b>No se pudo iniciar la simulación 3D.</b><br>' + (motivo || 'Tardó demasiado en cargar.') +
-      '<br><small>Pruebe recargar con Ctrl+F5. Si sigue igual, revise que el navegador tenga WebGL y acceso a internet (three.js se carga desde cdn.jsdelivr.net).</small>';
-    (document.getElementById('view') || document.body).appendChild(d);
-  }
-  function recuperar() {
-    if (window.__appStarted || !window.__authOk) return;
-    var ya = false; try { ya = sessionStorage.getItem('ups3d-reintento'); } catch (e) {}
-    if (ya) return mostrar();
-    try { sessionStorage.setItem('ups3d-reintento', '1'); } catch (e) {}
-    var urls = performance.getEntriesByType('resource').map(function (r) { return r.name; }).filter(function (u) { return /\.(js|css)(\?|$)/.test(u); });
-    Promise.all(urls.concat([location.href]).map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); })).then(function () { location.reload(); });
-  }
-  addEventListener('error', function (e) { motivo = (e && e.message) || motivo; setTimeout(recuperar, 300); });
-  addEventListener('unhandledrejection', function (e) { motivo = (e && e.reason && e.reason.message) || motivo; setTimeout(recuperar, 300); });
-  window.__vigilar = function () { setTimeout(mostrar, 8000); };   // lo llama acceso.js al ingresar la clave
-})();
-</script>
+
 <script type="importmap">
 {"imports":{
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-  "./js/acceso.js": "./js/acceso.js?v=642c7af6",
+  "./js/acceso.js": "./js/acceso.js?v=ed2e2d2f",
   "./js/clientes.js": "./js/clientes.js?v=816a4454",
   "./js/config.js": "./js/config.js?v=ab11e797",
   "./js/core/bus.js": "./js/core/bus.js?v=e4b15e60",
@@ -292,7 +288,7 @@
   "./js/logic/refresh.js": "./js/logic/refresh.js?v=07487548",
   "./js/logic/sequences.js": "./js/logic/sequences.js?v=1e29fc08",
   "./js/logic/simulate.js": "./js/logic/simulate.js?v=48a72d3e",
-  "./js/main.js": "./js/main.js?v=5036ac54",
+  "./js/main.js": "./js/main.js?v=dfa80054",
   "./js/model/boardCover.js": "./js/model/boardCover.js?v=7482a5b4",
   "./js/model/breakerPanel.js": "./js/model/breakerPanel.js?v=3b2203b4",
   "./js/model/cablesOrden.js": "./js/model/cablesOrden.js?v=7e4abb02",
@@ -304,17 +300,17 @@
   "./js/sonacol/escena.js": "./js/sonacol/escena.js?v=bbaf2ab7",
   "./js/sonacol/externo.js": "./js/sonacol/externo.js?v=7c9e8850",
   "./js/sonacol/logica.js": "./js/sonacol/logica.js?v=0bb592d8",
-  "./js/sonacol/sonacol.js": "./js/sonacol/sonacol.js?v=be980ccc",
+  "./js/sonacol/sonacol.js": "./js/sonacol/sonacol.js?v=859d0378",
   "./js/sonacol/ui.js": "./js/sonacol/ui.js?v=a359de83",
   "./js/state.js": "./js/state.js?v=81f3719b",
   "./js/ui/controls.js": "./js/ui/controls.js?v=e92d36ae",
   "./js/ui/sync.js": "./js/ui/sync.js?v=a0a8bd64",
   "./js/ui/visuals.js": "./js/ui/visuals.js?v=74b40aec",
   "./js/ui/zoom.js": "./js/ui/zoom.js?v=330b4b9b",
-  "./js/verificar.js": "./js/verificar.js?v=1d638b92",
+  "./js/verificar.js": "./js/verificar.js?v=7c8bf5fe",
   "./tablero/modelos.js": "./tablero/modelos.js?v=cb0737d7"
 }}
 </script>
-<script type="module" src="js/acceso.js?v=642c7af6"></script>
+<script type="module" src="js/acceso.js?v=ed2e2d2f" onerror="__reintentar('no llegó un archivo')"></script>
 </body>
 </html>

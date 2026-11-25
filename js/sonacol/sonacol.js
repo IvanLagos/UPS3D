@@ -24,10 +24,6 @@ const CIRCUITOS = {
 const delCircuito3 = scene.children.filter(o => !o.isLight && !o.isLineSegments && !(o.isMesh && o.geometry.type === 'ShapeGeometry') && o !== g1 && o !== g2 && o !== gExt);
 const visibleAntes = new Map(delCircuito3.map(o => [o, o.visible]));
 
-/* en SONACOL el diagrama unifilar ocupa la columna derecha (más grande) y el panel de controles queda bajo el 3D */
-$('#left').append($('#panel'));
-$('#app').append($('#unifilar'));
-
 /* el circuito 3 de SONACOL no lleva la llave selectora: queda solo el bypass de rodeo con interruptor CB7 */
 S.bypassMode = 'rodeo'; S.sel = 1; S.CB.CB7 = false;
 syncSwitches();

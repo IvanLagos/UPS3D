@@ -21,10 +21,15 @@ export async function ingresar(usuario, clave) {
 /** Acceso de la sesión de esta pestaña ('oxiquim', 'sonacol' o 'todos'), o null si no ingresó o ya venció. */
 export async function sesionValida() {
   if (!token()) return null;
-  try {
-    const r = await fetch('api/sesion', { headers: cabeceras() });
-    return r.ok ? (await r.json()).acceso : null;
-  } catch (err) { return null; }
+  for (let intento = 0; intento < 4; intento++) {          // ante un fallo pasajero (red o hosting) se reintenta: solo un rechazo del servidor pide ingresar de nuevo
+    try {
+      const r = await fetch('api/sesion', { headers: cabeceras() });
+      if (r.ok) return (await r.json()).acceso;
+      if (r.status === 401) return null;
+    } catch (err) { /* sin conexión: se reintenta */ }
+    await new Promise(listo => setTimeout(listo, 700 * (intento + 1)));
+  }
+  return null;
 }
 
 /** Olvida el ingreso de esta pestaña: la próxima carga volverá a pedirlo. */

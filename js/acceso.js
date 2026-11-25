@@ -68,12 +68,15 @@ async function abrir(cliente) {
   });
   document.body.classList.remove('bloqueado');
   $('#accesoForm').hidden = true; $('#clientesBox').hidden = true; $('#cargando').hidden = false;   // la pantalla de carga tapa la app hasta que el cliente esté listo (si no, se vería un instante el modelo base)
-  window.__authOk = true;
-  window.__vigilar?.();                         // arranca la vigilancia de carga del index.html
   try {
     await import('./main.js');
     if (cliente.id === 'sonacol') await import('./sonacol/sonacol.js');          // SONACOL: selector con sus 3 circuitos
-  } finally { $('#acceso')?.remove(); }        // también si falla: así se ve el aviso de error de la página
+    window.__cargaLista();
+    $('#acceso')?.remove();
+  } catch (err) {                               // la pantalla de carga sigue puesta: nunca se muestra la aplicación a medio cargar
+    console.error('No se pudo cargar el cliente:', err);
+    window.__reintentar(err && err.message);
+  }
 }
 
 function pedirClave() {

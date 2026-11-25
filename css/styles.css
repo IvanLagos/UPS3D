@@ -18,10 +18,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/
 #toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
 #toast.show{opacity:1}
 #tip{position:fixed;display:none;z-index:20;background:#000d;border:1px solid var(--line);padding:6px 10px;border-radius:8px;font-size:13px;pointer-events:none;max-width:260px}
-#panel{background:var(--panel);overflow-y:auto;padding:0 20px 24px;min-width:0}
-#unifilar{display:flex;flex-direction:column;min-height:0;min-width:0;padding:10px 16px 12px;background:var(--panel);border-top:1px solid var(--line)}
+#panel{background:var(--panel);overflow-y:auto;padding:0 20px 24px;min-width:0;border-top:1px solid var(--line)}      /* bajo el 3D */
+#unifilar{display:flex;flex-direction:column;min-height:0;min-width:0;padding:16px 20px 20px;background:var(--panel)}      /* columna derecha */
 #unifilar h2{margin:0}
-.uhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.uhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.uhead button,.uhead h2,.modesel span{white-space:nowrap}
 #unifilar.expanded{position:fixed;inset:0;z-index:30;padding:18px 28px 24px;border:0}
 #unifilar.expanded h2{font-size:14px}
 #unifilar.expanded svg#uni,#unifilar.expanded svg#sonUni{height:100%}
@@ -96,7 +97,7 @@ svg#uni,svg#sonUni{flex:1;min-height:0;width:100%;height:100%;background:var(--p
   #left{grid-template-rows:56vh auto;border-right:0}
   #unifilar svg#uni,#unifilar svg#sonUni{height:auto}
   .cols{grid-template-columns:1fr}
-  #panel{border-top:1px solid var(--line)}
+  #unifilar{border-top:1px solid var(--line)}
 }
 #breakerRows small{display:none}
 header p{margin:2px 0 0}
@@ -170,8 +171,6 @@ a.cliente-op{text-decoration:none}
 .alarmas li.bad{border-left-color:var(--bad)}
 .alarmas li.ok{border-left-color:var(--accent);color:var(--muted)}
 
-body[data-cliente="sonacol"] #unifilar{border-top:0;padding:16px 20px 20px}
-body[data-cliente="sonacol"] #panel{border-top:1px solid var(--line)}
 
 /* barras de desplazamiento oscuras, a juego con el tema */
 *{scrollbar-width:thin;scrollbar-color:#3a4553 transparent}

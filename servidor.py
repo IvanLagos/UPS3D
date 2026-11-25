@@ -2,9 +2,11 @@
 Usa un servidor con hilos: el navegador abre varias conexiones a la vez y con un servidor de un solo hilo la página se quedaba esperando.
 Recarga automática: a las páginas .html que sirve les agrega un pequeño script que consulta /__cambios cada segundo y recarga la
 página cuando algún archivo cambia (o cuando el servidor vuelve después de haberse detenido). Solo existe aquí: la página publicada no lo lleva."""
+import hashlib
 import http.server
 import os
 import sys
+import urllib.parse
 
 import cuentas_api
 
@@ -47,14 +49,31 @@ def huella_de_archivos():
     return f'{total}-{ultimo}'
 
 
+def version_correcta(ruta_pedida):
+    """True si la URL lleva ?v=<huella> y esa huella es la del archivo que hay aquí (ver herramientas/version.py)."""
+    partes = urllib.parse.urlsplit(ruta_pedida)
+    v = urllib.parse.parse_qs(partes.query).get('v', [''])[0]
+    archivo = os.path.abspath(os.path.join(RAIZ, urllib.parse.unquote(partes.path).lstrip('/')))
+    if not v or not archivo.startswith(RAIZ + os.sep) or not os.path.isfile(archivo):
+        return False
+    with open(archivo, 'rb') as f:
+        return hashlib.sha1(f.read().replace(b'\r\n', b'\n')).hexdigest()[:8] == v
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'          # conexiones persistentes: los ~30 módulos viajan por pocas conexiones
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=RAIZ, **kwargs)
 
+    def send_response(self, code, message=None):
+        self._codigo = code
+        super().send_response(code, message)
+
     def end_headers(self):
-        self.send_header('Cache-Control', 'no-store')
+        # En producción, los archivos pedidos con su huella correcta se guardan en el navegador (menos pedidos en cada recarga); lo demás no se guarda
+        fijo = PRODUCCION and getattr(self, '_codigo', 0) == 200 and version_correcta(self.path)
+        self.send_header('Cache-Control', 'public, max-age=31536000, immutable' if fijo else 'no-store')
         super().end_headers()
 
     def _enviar(self, cuerpo, tipo):
@@ -80,7 +99,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ruta = self._ruta()
         if cuentas_api.manejar(self, 'GET', ruta):
             return
-        if ruta.endswith(('.py', '.json.tmp')) or ruta.lower().startswith(('/usuarios.json', '/.git')):          # archivos internos: nunca se sirven
+        if self._interno(ruta):
             return self.send_error(404)
         if PRODUCCION and ruta in ('/', '/index.html', '/tablero.html'):
             return super().do_GET()
@@ -97,7 +116,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._enviar(html, 'text/html; charset=utf-8')
         return super().do_GET()
 
-    do_HEAD = do_GET
+    def _interno(self, ruta):
+        r = urllib.parse.unquote(ruta).lower()                      # archivos internos: nunca se sirven
+        return r.endswith(('.py', '.pyc', '.json.tmp')) or 'usuarios.json' in r or '/.git' in r
+
+    def do_HEAD(self):                          # solo cabeceras: nunca el cuerpo (dañaría las conexiones persistentes)
+        if self._interno(self._ruta()):
+            return self.send_error(404)
+        return super().do_HEAD()
 
     def log_message(self, *args):          # sin ruido en la consola
         pass

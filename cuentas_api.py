@@ -189,6 +189,8 @@ def _responder(handler, codigo, cuerpo):
     handler.send_response(codigo)
     handler.send_header('Content-Type', 'application/json; charset=utf-8')
     handler.send_header('Content-Length', str(len(datos)))
+    if handler.command != 'GET':
+        handler.send_header('Connection', 'close')          # puede quedar cuerpo sin leer: la conexión no se reutiliza
     handler.end_headers()
     if handler.command != 'HEAD':
         handler.wfile.write(datos)
